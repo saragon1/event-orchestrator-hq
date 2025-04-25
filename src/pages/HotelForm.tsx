@@ -28,7 +28,14 @@ const formSchema = z.object({
   website: z.string().url().optional().or(z.literal("")),
   rating: z.string()
     .optional()
-    .transform((val) => (val ? parseInt(val, 10) : null))
+    .transform((val) => {
+      // Transform empty string to null
+      if (!val) return null;
+      // Parse the value to a number
+      const parsed = parseInt(val, 10);
+      // Return null if parsing fails
+      return isNaN(parsed) ? null : parsed;
+    })
     .refine(
       (val) => val === null || (val >= 1 && val <= 5),
       "Rating must be between 1 and 5"
@@ -100,7 +107,7 @@ const HotelForm = () => {
     setIsLoading(true);
 
     try {
-      // The rating is automatically transformed by zod schema
+      // The rating is already correctly transformed by zod schema
       const hotelData = {
         name: values.name,
         address: values.address,
@@ -108,7 +115,7 @@ const HotelForm = () => {
         country: values.country,
         phone: values.phone || null,
         website: values.website || null,
-        rating: values.rating, // This will already be a number or null thanks to zod
+        rating: values.rating, // This is now properly transformed to number or null by zod
       };
 
       let response;
