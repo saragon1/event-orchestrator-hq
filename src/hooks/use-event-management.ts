@@ -62,12 +62,13 @@ export function useEventManagement(eventId: string) {
       // Extract the IDs or use empty array if none found
       const assignedIds = eventPersons?.map(ep => ep.person_id) || [];
 
-      // Now fetch all persons that are NOT in the assigned IDs
-      const query = supabase.from('persons').select('*');
+      // Now fetch all persons
+      let query = supabase.from('persons').select('*');
       
       // Only apply the filter if there are assigned IDs
       if (assignedIds.length > 0) {
-        query.not('id', 'in', assignedIds);
+        // Fix: Use the 'in' operator with the 'not' prefix correctly
+        query = query.not('id', 'in', assignedIds);
       }
       
       const { data, error } = await query;
@@ -201,12 +202,13 @@ export function useEventManagement(eventId: string) {
       // Extract the IDs or use empty array if none found
       const assignedIds = eventHotels?.map(eh => eh.hotel_id) || [];
 
-      // Now fetch all hotels that are NOT in the assigned IDs
-      const query = supabase.from('hotels').select('*');
+      // Now fetch all hotels
+      let query = supabase.from('hotels').select('*');
       
       // Only apply the filter if there are assigned IDs
       if (assignedIds.length > 0) {
-        query.not('id', 'in', assignedIds);
+        // Fix: Use the 'in' operator with the 'not' prefix correctly
+        query = query.not('id', 'in', assignedIds);
       }
       
       const { data, error } = await query;
