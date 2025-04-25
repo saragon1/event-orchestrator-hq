@@ -100,6 +100,7 @@ const HotelForm = () => {
     setIsLoading(true);
 
     try {
+      // The rating is automatically transformed by zod schema
       const hotelData = {
         name: values.name,
         address: values.address,
@@ -107,7 +108,7 @@ const HotelForm = () => {
         country: values.country,
         phone: values.phone || null,
         website: values.website || null,
-        rating: values.rating,
+        rating: values.rating, // This will already be a number or null thanks to zod
       };
 
       let response;
