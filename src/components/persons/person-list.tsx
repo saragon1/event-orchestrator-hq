@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useEventStore } from "@/stores/event-store";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,8 @@ import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
 import { UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Person {
   id: string;
@@ -15,9 +16,14 @@ interface Person {
   role?: string;
 }
 
-export const PersonList = () => {
+interface PersonListProps {
+  onAdd: () => void;
+}
+
+export const PersonList = ({ onAdd }: PersonListProps) => {
+  const navigate = useNavigate();
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [persons, setPersons] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const selectedEventId = useEventStore((state) => state.selectedEventId);
 
@@ -25,7 +31,6 @@ export const PersonList = () => {
     const fetchPersons = async () => {
       setIsLoading(true);
       try {
-        // First, get all persons
         const { data: personsData, error: personsError } = await supabase
           .from('persons')
           .select('*')
@@ -33,7 +38,6 @@ export const PersonList = () => {
 
         if (personsError) throw personsError;
 
-        // If an event is selected, fetch all related data
         if (selectedEventId && personsData) {
           const { data: reservations } = await supabase
             .from('hotel_reservations')
@@ -76,9 +80,12 @@ export const PersonList = () => {
     fetchPersons();
   }, [searchTerm, selectedEventId]);
 
-  const handleAddPerson = () => {
-    // This would open a modal or navigate to a form
-    console.log("Add person clicked");
+  const handleViewDetails = (person: Person) => {
+    setSelectedPerson(person);
+  };
+
+  const handleEdit = (id: string) => {
+    navigate(`/persons/${id}`);
   };
 
   if (isLoading) {
@@ -95,7 +102,7 @@ export const PersonList = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={handleAddPerson}>
+        <Button onClick={onAdd}>
           <UserPlus className="mr-2 h-4 w-4" />
           Add Person
         </Button>
@@ -108,7 +115,7 @@ export const PersonList = () => {
           icon={<UserPlus className="h-8 w-8 text-muted-foreground" />}
           action={!searchTerm ? {
             label: "Add Person",
-            onClick: handleAddPerson,
+            onClick: onAdd,
           } : undefined}
         />
       ) : (
@@ -117,13 +124,37 @@ export const PersonList = () => {
             <PersonCard
               key={person.id}
               {...person}
-              onViewDetails={() => {
-                console.log(`View details for ${person.name}`);
-              }}
+              onViewDetails={() => handleViewDetails(person)}
+              onEdit={() => handleEdit(person.id)}
             />
           ))}
         </div>
       )}
+
+      <Dialog open={!!selectedPerson} onOpenChange={() => setSelectedPerson(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedPerson?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedPerson && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium">Contact Information</h4>
+                <p className="text-sm text-muted-foreground">{selectedPerson.email}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedPerson.phone || 'No phone number provided'}
+                </p>
+              </div>
+              {selectedPerson.role && (
+                <div>
+                  <h4 className="font-medium">Role</h4>
+                  <p className="text-sm text-muted-foreground">{selectedPerson.role}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

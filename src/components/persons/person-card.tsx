@@ -20,6 +20,7 @@ interface PersonCardProps {
   hasFlight?: boolean;
   hasBus?: boolean;
   onViewDetails?: () => void;
+  onEdit?: () => void;
 }
 
 export const PersonCard = ({
@@ -31,6 +32,7 @@ export const PersonCard = ({
   hasFlight = false,
   hasBus = false,
   onViewDetails,
+  onEdit,
 }: PersonCardProps) => {
   return (
     <Card className="animate-fade-in">
@@ -60,14 +62,20 @@ export const PersonCard = ({
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex justify-end gap-2">
         <Button
           size="sm"
-          variant="outline"
-          className="ml-auto"
+          variant="ghost"
           onClick={onViewDetails}
         >
-          View Details
+          <Eye className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onEdit}
+        >
+          <Pencil className="h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
