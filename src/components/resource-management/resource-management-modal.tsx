@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -77,7 +76,7 @@ export const ResourceManagementModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[90vw] w-[1200px] h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -90,109 +89,103 @@ export const ResourceManagementModal = ({
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-hidden">
-            <div className="grid grid-cols-2 gap-6 h-full">
-              {/* Available Resources Panel */}
-              <div className="flex flex-col border rounded-lg p-4 bg-background shadow-sm">
-                <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
-                  <span>Available {resourceType === 'person' ? 'Persons' : 'Hotels'}</span>
-                  <Badge variant="outline">{availableResources.length}</Badge>
-                </h3>
-                <ScrollArea className="flex-1 pr-4">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>{resourceType === 'person' ? 'Email' : 'City'}</TableHead>
-                          <TableHead>{resourceType === 'person' ? 'Role' : 'Rating'}</TableHead>
-                          <TableHead className="w-[80px]">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {availableResources.map((resource) => (
-                          <TableRow key={resource.id} className="group hover:bg-muted/50 transition-colors">
-                            {renderResourceDetails(resource)}
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onAssign(resource.id)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Plus className="h-4 w-4 text-primary" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {availableResources.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                              <div className="flex flex-col items-center justify-center gap-2 py-4">
-                                <p>No available {resourceType === 'person' ? 'persons' : 'hotels'} found</p>
-                                <p className="text-sm text-muted-foreground">
-                                  All {resourceType === 'person' ? 'persons' : 'hotels'} have been assigned
-                                </p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </ScrollArea>
-              </div>
+          <div className="flex-1 overflow-hidden grid grid-cols-2 gap-6">
+            {/* Available Resources Panel */}
+            <div className="flex flex-col border rounded-lg p-4 bg-background shadow-sm overflow-hidden">
+              <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
+                <span>Available {resourceType === 'person' ? 'Persons' : 'Hotels'}</span>
+                <Badge variant="outline">{availableResources.length}</Badge>
+              </h3>
+              <ScrollArea className="flex-1 overflow-auto pr-4">
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[30%]">Name</TableHead>
+                      <TableHead className="w-[30%]">{resourceType === 'person' ? 'Email' : 'City'}</TableHead>
+                      <TableHead className="w-[30%]">{resourceType === 'person' ? 'Role' : 'Rating'}</TableHead>
+                      <TableHead className="w-[10%] text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {availableResources.map((resource) => (
+                      <TableRow key={resource.id} className="group hover:bg-muted/50 transition-colors">
+                        {renderResourceDetails(resource)}
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onAssign(resource.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Plus className="h-4 w-4 text-primary" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {availableResources.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                          <div className="flex flex-col items-center justify-center gap-2 py-4">
+                            <p>No available {resourceType === 'person' ? 'persons' : 'hotels'} found</p>
+                            <p className="text-sm text-muted-foreground">
+                              All {resourceType === 'person' ? 'persons' : 'hotels'} have been assigned
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
 
-              {/* Assigned Resources Panel */}
-              <div className="flex flex-col border rounded-lg p-4 bg-background shadow-sm">
-                <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
-                  <span>Assigned {resourceType === 'person' ? 'Persons' : 'Hotels'}</span>
-                  <Badge>{assignedResources.length}</Badge>
-                </h3>
-                <ScrollArea className="flex-1 pr-4">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>{resourceType === 'person' ? 'Email' : 'City'}</TableHead>
-                          <TableHead>{resourceType === 'person' ? 'Role' : 'Rating'}</TableHead>
-                          <TableHead className="w-[80px]">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {assignedResources.map((resource) => (
-                          <TableRow key={resource.id} className="group hover:bg-muted/50 transition-colors">
-                            {renderResourceDetails(resource)}
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onRemove(resource.id)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {assignedResources.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                              <div className="flex flex-col items-center justify-center gap-2 py-4">
-                                <p>No {resourceType === 'person' ? 'persons' : 'hotels'} assigned yet</p>
-                                <p className="text-sm text-muted-foreground">
-                                  Use the "+" button to assign {resourceType === 'person' ? 'persons' : 'hotels'}
-                                </p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </ScrollArea>
-              </div>
+            {/* Assigned Resources Panel */}
+            <div className="flex flex-col border rounded-lg p-4 bg-background shadow-sm overflow-hidden">
+              <h3 className="text-lg font-semibold mb-2 flex items-center justify-between">
+                <span>Assigned {resourceType === 'person' ? 'Persons' : 'Hotels'}</span>
+                <Badge>{assignedResources.length}</Badge>
+              </h3>
+              <ScrollArea className="flex-1 overflow-auto pr-4">
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[30%]">Name</TableHead>
+                      <TableHead className="w-[30%]">{resourceType === 'person' ? 'Email' : 'City'}</TableHead>
+                      <TableHead className="w-[30%]">{resourceType === 'person' ? 'Role' : 'Rating'}</TableHead>
+                      <TableHead className="w-[10%] text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignedResources.map((resource) => (
+                      <TableRow key={resource.id} className="group hover:bg-muted/50 transition-colors">
+                        {renderResourceDetails(resource)}
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onRemove(resource.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {assignedResources.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                          <div className="flex flex-col items-center justify-center gap-2 py-4">
+                            <p>No {resourceType === 'person' ? 'persons' : 'hotels'} assigned yet</p>
+                            <p className="text-sm text-muted-foreground">
+                              Use the "+" button to assign {resourceType === 'person' ? 'persons' : 'hotels'}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           </div>
         )}
@@ -200,4 +193,3 @@ export const ResourceManagementModal = ({
     </Dialog>
   );
 };
-
