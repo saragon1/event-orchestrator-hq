@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { useEventStore } from "@/stores/event-store";
@@ -7,6 +6,12 @@ import { ResourceManagementModal } from "@/components/resource-management/resour
 import { DashboardStats } from "@/components/dashboard/stats/dashboard-stats";
 import { EventHeader } from "@/components/dashboard/event-header";
 import { ResourceManagementSection } from "@/components/dashboard/resource-management-section";
+import { ParticipantsTable } from "@/components/dashboard/participants-table";
+
+// Add a type declaration for the extended window
+interface ExtendedWindow extends Window {
+  refreshParticipantsTable?: () => void;
+}
 
 const Dashboard = () => {
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
@@ -52,8 +57,6 @@ const Dashboard = () => {
       <div className="space-y-6">
         <EventHeader event={selectedEvent} />
         
-        <DashboardStats selectedEventId={selectedEventId} />
-
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 mt-6">
           <ResourceManagementSection
             title="Persons"
@@ -80,8 +83,26 @@ const Dashboard = () => {
           onClose={() => setIsPersonModalOpen(false)}
           availableResources={availablePersons}
           assignedResources={assignedPersons}
-          onAssign={assignPersonToEvent}
-          onRemove={removePersonFromEvent}
+          onAssign={(personId) => {
+            assignPersonToEvent(personId);
+            // Refresh participants table after assignment
+            setTimeout(() => {
+              const extendedWindow = window as ExtendedWindow;
+              if (extendedWindow.refreshParticipantsTable) {
+                extendedWindow.refreshParticipantsTable();
+              }
+            }, 500); // Small delay to ensure the database operation completes
+          }}
+          onRemove={(personId) => {
+            removePersonFromEvent(personId);
+            // Refresh participants table after removal
+            setTimeout(() => {
+              const extendedWindow = window as ExtendedWindow;
+              if (extendedWindow.refreshParticipantsTable) {
+                extendedWindow.refreshParticipantsTable();
+              }
+            }, 500); // Small delay to ensure the database operation completes
+          }}
           resourceType="person"
           isLoading={isLoading.persons}
         />
@@ -98,6 +119,21 @@ const Dashboard = () => {
           isLoading={isLoading.hotels}
         />
       </div>
+
+      <div className="mt-6">
+        <DashboardStats selectedEventId={selectedEventId} />
+      </div>
+
+      <div className="mt-8">
+        <div className="flex items-center mb-4">
+          <h2 className="text-2xl font-semibold">Event Participants</h2>
+          <p className="ml-4 text-muted-foreground">
+            {selectedEvent ? `${assignedPersons.length} participants` : "Select an event to view participants"}
+          </p>
+        </div>
+        <ParticipantsTable selectedEventId={selectedEventId} />
+      </div>
+
     </DashboardLayout>
   );
 };

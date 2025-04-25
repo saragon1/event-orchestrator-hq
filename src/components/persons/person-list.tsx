@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useEventStore } from "@/stores/event-store";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +18,7 @@ interface Person {
   hasHotel?: boolean;
   hasFlight?: boolean;
   hasBus?: boolean;
+  hasCar?: boolean;
 }
 
 interface PersonListProps {
@@ -60,11 +60,17 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
             .select('person_id')
             .eq('event_id', selectedEventId);
 
+          const { data: carReservations } = await supabase
+            .from('car_reservations')
+            .select('person_id')
+            .eq('event_id', selectedEventId);
+
           const personsWithBookings = personsData.map(person => ({
             ...person,
             hasHotel: reservations?.some(r => r.person_id === person.id) || false,
             hasFlight: flightTickets?.some(t => t.person_id === person.id) || false,
             hasBus: busTickets?.some(t => t.person_id === person.id) || false,
+            hasCar: carReservations?.some(r => r.person_id === person.id) || false,
           }));
 
           setPersons(personsWithBookings);
@@ -74,6 +80,7 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
             hasHotel: false,
             hasFlight: false,
             hasBus: false,
+            hasCar: false,
           })));
         }
       } catch (error) {

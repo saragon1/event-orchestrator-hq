@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ interface Person {
 interface TicketFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'flight' | 'bus';
+  type: 'flight' | 'bus' | 'car';
   eventId: string;
   transportId: string;
   ticketId?: string;
@@ -76,7 +75,7 @@ export function TicketFormModal({
     const fetchTicket = async () => {
       if (!ticketId) return;
       
-      const table = type === 'flight' ? 'flight_tickets' : 'bus_tickets';
+      const table = type === 'flight' ? 'flight_tickets' : type === 'bus' ? 'bus_tickets' : 'car_reservations';
       const { data, error } = await supabase
         .from(table)
         .select('*')
@@ -110,22 +109,32 @@ export function TicketFormModal({
     setIsLoading(true);
     
     try {
-      const table = type === 'flight' ? 'flight_tickets' : 'bus_tickets';
+      const table = type === 'flight' 
+        ? 'flight_tickets' 
+        : type === 'bus'
+          ? 'bus_tickets'
+          : 'car_reservations';
       
       // Create the data object with the common fields
       const data: any = {
         person_id: values.person_id,
         event_id: eventId,
-        seat: values.seat,
         confirmation_number: values.confirmation_number,
         notes: values.notes
       };
 
+      // Add seat field only for flight and bus tickets
+      if (type !== 'car') {
+        data.seat = values.seat;
+      }
+
       // Add the appropriate transport ID field based on the ticket type
       if (type === 'flight') {
         data.flight_id = transportId;
-      } else {
+      } else if (type === 'bus') {
         data.bus_id = transportId;
+      } else {
+        data.car_id = transportId;
       }
       
       if (ticketId) {
@@ -172,7 +181,13 @@ export function TicketFormModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{ticketId ? "Edit" : "Add"} {type === 'flight' ? "Flight" : "Bus"} Ticket</DialogTitle>
+          <DialogTitle>{ticketId ? "Edit" : "Add"} {
+            type === 'flight' 
+              ? "Flight" 
+              : type === 'bus' 
+                ? "Bus" 
+                : "Car"
+          } Ticket</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -196,15 +211,18 @@ export function TicketFormModal({
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="seat">Seat</Label>
-              <Input
-                id="seat"
-                placeholder="e.g., 12A"
-                {...form.register("seat")}
-                disabled={isLoading}
-              />
-            </div>
+            {/* Only show seat field for flight and bus tickets */}
+            {type !== 'car' && (
+              <div className="grid gap-2">
+                <Label htmlFor="seat">Seat</Label>
+                <Input
+                  id="seat"
+                  placeholder="e.g., 12A"
+                  {...form.register("seat")}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="confirmation">Confirmation Number</Label>

@@ -1,8 +1,7 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users } from "lucide-react";
+import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 
@@ -48,6 +47,12 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
       label: "Dashboard",
       href: "/dashboard",
     },
+    {
+      icon: List,
+      label: "Events",
+      href: "/events",
+    },
+    
   ];
 
   const eventResourcesNavItems = [
@@ -60,6 +65,16 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
       icon: Plane,
       label: "Flights",
       href: "/flights",
+    },
+    {
+      icon: BedDouble,
+      label: "Hotel Reservations",
+      href: "/hotel-reservations",
+    },
+    {
+      icon: Car,
+      label: "Cars",
+      href: "/cars",
     },
   ];
 

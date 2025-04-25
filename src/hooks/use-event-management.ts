@@ -106,7 +106,7 @@ export function useEventManagement(eventId: string) {
       }
       
       const assignedPersonsData = data?.map(item => item.persons) || [];
-      console.log('Assigned persons:', assignedPersonsData);
+      // console.log('Assigned persons:', assignedPersonsData);
       setAssignedPersons(assignedPersonsData);
     } catch (error) {
       console.error('Error fetching assigned persons:', error);

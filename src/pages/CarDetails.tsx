@@ -3,7 +3,7 @@ import { useParams, useLocation } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bus, Plus, Pencil, Trash2 } from "lucide-react";
+import { Car, Plus, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,47 +18,64 @@ import { useEventStore } from "@/stores/event-store";
 import { TicketFormModal } from "@/components/tickets/TicketFormModal";
 import { cn } from "@/lib/utils";
 import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/utils";
 
-interface Bus {
+interface Car {
   id: string;
+  type: string;
   company: string;
   departure_location: string;
   arrival_location: string;
   departure_time: string;
   arrival_time: string;
+  driver_name: string;
+  license_plate: string;
   capacity: number;
 }
 
-interface BusTicket {
+interface CarReservation {
   id: string;
   person: { name: string };
-  seat: string | null;
   confirmation_number: string | null;
   notes: string | null;
 }
 
-export default function BusDetails() {
+const getCarTypeLabel = (type: string) => {
+  switch (type) {
+    case 'private':
+      return { label: 'Private', variant: 'default' as const };
+    case 'ncc':
+      return { label: 'NCC', variant: 'outline' as const };
+    case 'taxi':
+      return { label: 'Taxi', variant: 'secondary' as const };
+    default:
+      return { label: type, variant: 'outline' as const };
+  }
+};
+
+export default function CarDetails() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { toast } = useToast();
-  const [bus, setBus] = useState<Bus | null>(null);
-  const [tickets, setTickets] = useState<BusTicket[]>([]);
+  const [car, setCar] = useState<Car | null>(null);
+  const [reservations, setReservations] = useState<CarReservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>();
+  const [selectedReservationId, setSelectedReservationId] = useState<string | undefined>();
   const selectedEventId = useEventStore((state) => state.selectedEventId);
   
-  // Extract ticket ID from query parameter
-  const highlightedTicketId = new URLSearchParams(location.search).get('ticket');
+  // Extract reservation ID from query parameter
+  const highlightedReservationId = new URLSearchParams(location.search).get('reservation');
 
   // Reference for the highlighted row
   const highlightedRowRef = React.useRef<HTMLTableRowElement>(null);
 
-  const fetchBus = async () => {
+  const fetchCar = async () => {
     if (!id || !selectedEventId) return;
 
     const { data, error } = await supabase
-      .from('buses')
+      .from('cars')
       .select('*')
       .eq('id', id)
       .eq('event_id', selectedEventId)
@@ -67,126 +84,135 @@ export default function BusDetails() {
     if (error) {
       toast({
         title: "Error",
-        description: "Could not fetch bus details",
+        description: "Could not fetch car details",
         variant: "destructive",
       });
       return;
     }
 
-    setBus(data);
+    setCar(data);
   };
 
-  const fetchTickets = async () => {
+  const fetchReservations = async () => {
     if (!id || !selectedEventId) return;
 
     const { data, error } = await supabase
-      .from('bus_tickets')
+      .from('car_reservations')
       .select(`
         id,
-        seat,
         confirmation_number,
         notes,
         person:persons(name)
       `)
-      .eq('bus_id', id)
+      .eq('car_id', id)
       .eq('event_id', selectedEventId);
 
     if (error) {
       toast({
         title: "Error",
-        description: "Could not fetch tickets",
+        description: "Could not fetch reservations",
         variant: "destructive",
       });
       return;
     }
 
-    setTickets(data || []);
+    setReservations(data || []);
     setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchBus();
-    fetchTickets();
+    fetchCar();
+    fetchReservations();
   }, [id, selectedEventId]);
 
-  // Scroll to highlighted ticket when the component loads or tickets change
+  // Scroll to highlighted reservation when the component loads or reservations change
   useEffect(() => {
-    if (highlightedTicketId && !isLoading && highlightedRowRef.current) {
+    if (highlightedReservationId && !isLoading && highlightedRowRef.current) {
       // Scroll the highlighted row into view with a smooth animation
       highlightedRowRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'center'
       });
     }
-  }, [highlightedTicketId, tickets, isLoading]);
+  }, [highlightedReservationId, reservations, isLoading]);
 
-  const handleDelete = async (ticketId: string) => {
+  const handleDelete = async (reservationId: string) => {
     try {
       const { error } = await supabase
-        .from('bus_tickets')
+        .from('car_reservations')
         .delete()
-        .eq('id', ticketId);
+        .eq('id', reservationId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Ticket deleted successfully",
+        description: "Reservation deleted successfully",
       });
 
-      fetchTickets();
+      fetchReservations();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Could not delete ticket",
+        description: "Could not delete reservation",
         variant: "destructive",
       });
     }
   };
 
-  const handleOpenModal = (ticketId?: string) => {
-    setSelectedTicketId(ticketId);
+  const handleOpenModal = (reservationId?: string) => {
+    setSelectedReservationId(reservationId);
     setIsModalOpen(true);
   };
 
-  if (!bus || !selectedEventId) {
+  if (!car || !selectedEventId) {
     return (
-      <DashboardLayout title="Bus Details">
+      <DashboardLayout title="Car Details">
         <div className="p-4">Loading...</div>
       </DashboardLayout>
     );
   }
 
+  const { label, variant } = getCarTypeLabel(car.type);
+
   return (
-    <DashboardLayout title="Bus Details">
+    <DashboardLayout title="Car Details">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Bus className="h-5 w-5" />
-            Bus Details
+            <Car className="h-5 w-5" />
+            Car Details
           </CardTitle>
           <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Add Ticket
+            Add Reservation
           </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div>
-              <h3 className="font-semibold">Company</h3>
-              <p>{bus.company}</p>
+              <h3 className="font-semibold">Car Type</h3>
+              <Badge variant={variant}>{label}</Badge>
             </div>
             <div>
-              <h3 className="font-semibold">Departure</h3>
-              <p>{bus.departure_location} - {new Date(bus.departure_time).toLocaleString()}</p>
+              <h3 className="font-semibold">Company / Driver</h3>
+              <p>{car.company} / {car.driver_name}</p>
             </div>
             <div>
-              <h3 className="font-semibold">Arrival</h3>
-              <p>{bus.arrival_location} - {new Date(bus.arrival_time).toLocaleString()}</p>
+              <h3 className="font-semibold">License Plate</h3>
+              <p>{car.license_plate}</p>
             </div>
             <div>
               <h3 className="font-semibold">Capacity</h3>
-              <p>{bus.capacity} seats</p>
+              <p>{car.capacity} passengers</p>
+            </div>
+            <div>
+              <h3 className="font-semibold">Departure</h3>
+              <p>{car.departure_location} - {formatDate(car.departure_time)}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold">Arrival</h3>
+              <p>{car.arrival_location} - {formatDate(car.departure_time)}</p>
             </div>
           </div>
 
@@ -194,39 +220,37 @@ export default function BusDetails() {
             <TableHeader>
               <TableRow>
                 <TableHead>Passenger</TableHead>
-                <TableHead>Seat</TableHead>
                 <TableHead>Confirmation</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map((ticket) => (
+              {reservations.map((reservation) => (
                 <TableRow 
-                  key={ticket.id}
-                  ref={ticket.id === highlightedTicketId ? highlightedRowRef : undefined}
+                  key={reservation.id}
+                  ref={reservation.id === highlightedReservationId ? highlightedRowRef : undefined}
                   className={cn({
-                    'bg-green-100 dark:bg-green-950/30 border-l-4 border-l-green-500': ticket.id === highlightedTicketId,
-                    'hover:bg-muted/50': ticket.id !== highlightedTicketId
+                    'bg-blue-100 dark:bg-blue-950/30 border-l-4 border-l-blue-500': reservation.id === highlightedReservationId,
+                    'hover:bg-muted/50': reservation.id !== highlightedReservationId
                   })}
                 >
-                  <TableCell>{ticket.person?.name}</TableCell>
-                  <TableCell>{ticket.seat || '-'}</TableCell>
-                  <TableCell>{ticket.confirmation_number || '-'}</TableCell>
-                  <TableCell>{ticket.notes || '-'}</TableCell>
+                  <TableCell>{reservation.person?.name}</TableCell>
+                  <TableCell>{reservation.confirmation_number || '-'}</TableCell>
+                  <TableCell>{reservation.notes || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleOpenModal(ticket.id)}
+                        onClick={() => handleOpenModal(reservation.id)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleDelete(ticket.id)}
+                        onClick={() => handleDelete(reservation.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -244,15 +268,15 @@ export default function BusDetails() {
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
-            setSelectedTicketId(undefined);
+            setSelectedReservationId(undefined);
           }}
-          type="bus"
+          type="car"
           eventId={selectedEventId}
           transportId={id!}
-          ticketId={selectedTicketId}
-          onSuccess={fetchTickets}
+          ticketId={selectedReservationId}
+          onSuccess={fetchReservations}
         />
       )}
     </DashboardLayout>
   );
-}
+} 

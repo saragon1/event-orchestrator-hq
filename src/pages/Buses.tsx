@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Bus, Plus, Edit, Trash2 } from "lucide-react";
+import { Bus, Plus, Edit, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEventStore } from "@/stores/event-store";
@@ -150,10 +150,19 @@ const Buses = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => navigate(`/buses/details/${bus.id}`)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => navigate(`/buses/${bus.id}`)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
+
                     <Button
                       variant="ghost"
                       size="icon"

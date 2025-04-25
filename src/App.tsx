@@ -17,6 +17,10 @@ import BusForm from "./pages/BusForm";
 import NotFound from "./pages/NotFound";
 import FlightDetails from "./pages/FlightDetails";
 import BusDetails from "./pages/BusDetails";
+import HotelReservations from "./pages/HotelReservations";
+import Cars from "./pages/Cars";
+import CarForm from "./pages/CarForm";
+import CarDetails from "./pages/CarDetails";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +50,11 @@ const App = () => (
           <Route path="/buses/new" element={<BusForm />} />
           <Route path="/buses/:id" element={<BusForm />} />
           <Route path="/buses/details/:id" element={<BusDetails />} />
+          <Route path="/hotel-reservations" element={<HotelReservations />} />
+          <Route path="/cars" element={<Cars />} />
+          <Route path="/cars/new" element={<CarForm />} />
+          <Route path="/cars/:id" element={<CarForm />} />
+          <Route path="/cars/details/:id" element={<CarDetails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

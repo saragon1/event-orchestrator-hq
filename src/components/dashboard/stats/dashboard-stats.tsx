@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { DashboardStatsCard } from "./dashboard-stats-card";
 import { supabase } from "@/integrations/supabase/client";
-import { Hotel, Plane, Bus } from "lucide-react";
+import { Hotel, Plane, Bus, Car } from "lucide-react";
 
 interface DashboardStatsProps {
   selectedEventId: string | null;
@@ -13,6 +12,7 @@ export const DashboardStats = ({ selectedEventId }: DashboardStatsProps) => {
     hotelBookings: 0,
     flightTickets: 0,
     busReservations: 0,
+    carReservations: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,13 +23,16 @@ export const DashboardStats = ({ selectedEventId }: DashboardStatsProps) => {
         const [
           { count: hotelBookings },
           { count: flightTickets },
-          { count: busReservations }
+          { count: busReservations },
+          { count: carReservations }
         ] = await Promise.all([
           supabase.from('hotel_reservations').select('*', { count: 'exact', head: true })
             .eq('event_id', selectedEventId || ''),
           supabase.from('flight_tickets').select('*', { count: 'exact', head: true })
             .eq('event_id', selectedEventId || ''),
           supabase.from('bus_tickets').select('*', { count: 'exact', head: true })
+            .eq('event_id', selectedEventId || ''),
+          supabase.from('car_reservations').select('*', { count: 'exact', head: true })
             .eq('event_id', selectedEventId || '')
         ]);
 
@@ -37,6 +40,7 @@ export const DashboardStats = ({ selectedEventId }: DashboardStatsProps) => {
           hotelBookings: hotelBookings || 0,
           flightTickets: flightTickets || 0,
           busReservations: busReservations || 0,
+          carReservations: carReservations || 0,
         });
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
@@ -49,7 +53,7 @@ export const DashboardStats = ({ selectedEventId }: DashboardStatsProps) => {
   }, [selectedEventId]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-4">
       <DashboardStatsCard
         title="Hotel Bookings"
         value={stats.hotelBookings}
@@ -67,6 +71,12 @@ export const DashboardStats = ({ selectedEventId }: DashboardStatsProps) => {
         value={stats.busReservations}
         icon={Bus}
         iconColor="text-orange-500"
+      />
+      <DashboardStatsCard
+        title="Car Reservations"
+        value={stats.carReservations}
+        icon={Car}
+        iconColor="text-blue-500"
       />
     </div>
   );

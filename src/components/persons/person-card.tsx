@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Pencil, Hotel, Plane, Bus } from "lucide-react";
+import { Eye, Pencil, Hotel, Plane, Bus, Car } from "lucide-react";
 
 interface PersonCardProps {
   id: string;
@@ -19,6 +18,7 @@ interface PersonCardProps {
   hasHotel?: boolean;
   hasFlight?: boolean;
   hasBus?: boolean;
+  hasCar?: boolean;
   onViewDetails?: () => void;
   onEdit?: () => void;
 }
@@ -31,6 +31,7 @@ export const PersonCard = ({
   hasHotel = false,
   hasFlight = false,
   hasBus = false,
+  hasCar = false,
   onViewDetails,
   onEdit,
 }: PersonCardProps) => {
@@ -57,6 +58,11 @@ export const PersonCard = ({
             {hasBus && (
               <Badge variant="secondary" className="flex gap-1">
                 <Bus className="h-3 w-3" />
+              </Badge>
+            )}
+            {hasCar && (
+              <Badge variant="secondary" className="flex gap-1">
+                <Car className="h-3 w-3" />
               </Badge>
             )}
           </div>

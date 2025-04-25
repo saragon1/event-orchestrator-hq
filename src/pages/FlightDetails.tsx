@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEventStore } from "@/stores/event-store";
 import { TicketFormModal } from "@/components/tickets/TicketFormModal";
+import { cn } from "@/lib/utils";
+import React from "react";
 
 interface Flight {
   id: string;
@@ -38,6 +39,7 @@ interface FlightTicket {
 
 export default function FlightDetails() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { toast } = useToast();
   const [flight, setFlight] = useState<Flight | null>(null);
   const [tickets, setTickets] = useState<FlightTicket[]>([]);
@@ -45,6 +47,12 @@ export default function FlightDetails() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>();
   const selectedEventId = useEventStore((state) => state.selectedEventId);
+  
+  // Extract ticket ID from query parameter
+  const highlightedTicketId = new URLSearchParams(location.search).get('ticket');
+
+  // Reference for the highlighted row
+  const highlightedRowRef = React.useRef<HTMLTableRowElement>(null);
 
   const fetchFlight = async () => {
     if (!id || !selectedEventId) return;
@@ -100,6 +108,17 @@ export default function FlightDetails() {
     fetchFlight();
     fetchTickets();
   }, [id, selectedEventId]);
+
+  // Scroll to highlighted ticket when the component loads or tickets change
+  useEffect(() => {
+    if (highlightedTicketId && !isLoading && highlightedRowRef.current) {
+      // Scroll the highlighted row into view with a smooth animation
+      highlightedRowRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [highlightedTicketId, tickets, isLoading]);
 
   const handleDelete = async (ticketId: string) => {
     try {
@@ -179,7 +198,14 @@ export default function FlightDetails() {
             </TableHeader>
             <TableBody>
               {tickets.map((ticket) => (
-                <TableRow key={ticket.id}>
+                <TableRow 
+                  key={ticket.id}
+                  ref={ticket.id === highlightedTicketId ? highlightedRowRef : undefined}
+                  className={cn({
+                    'bg-blue-100 dark:bg-blue-950/30 border-l-4 border-l-blue-500': ticket.id === highlightedTicketId,
+                    'hover:bg-muted/50': ticket.id !== highlightedTicketId
+                  })}
+                >
                   <TableCell>{ticket.person?.name}</TableCell>
                   <TableCell>{ticket.seat || '-'}</TableCell>
                   <TableCell>{ticket.confirmation_number || '-'}</TableCell>
