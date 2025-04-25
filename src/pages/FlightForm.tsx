@@ -35,6 +35,7 @@ const FlightForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const selectedEventId = useEventStore((state) => state.selectedEventId);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -88,6 +89,15 @@ const FlightForm = () => {
   }, [id, form, toast]);
 
   const onSubmit = async (values: FormValues) => {
+    if (!selectedEventId) {
+      toast({
+        title: "Error",
+        description: "Please select an event first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -98,7 +108,7 @@ const FlightForm = () => {
         arrival_airport: values.arrivalAirport,
         departure_time: values.departureTime,
         arrival_time: values.arrivalTime,
-        event_id: "00000000-0000-0000-0000-000000000000", // TODO: Get from context
+        event_id: selectedEventId,
       };
 
       let response;

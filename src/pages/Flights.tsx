@@ -16,22 +16,27 @@ import {
 import { Plane, Plus, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEventStore } from "@/stores/event-store";
 
 const Flights = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [flights, setFlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const selectedEventId = useEventStore((state) => state.selectedEventId);
 
   useEffect(() => {
-    fetchFlights();
-  }, []);
+    if (selectedEventId) {
+      fetchFlights();
+    }
+  }, [selectedEventId]);
 
   const fetchFlights = async () => {
     try {
       const { data, error } = await supabase
         .from("flights")
         .select("*")
+        .eq("event_id", selectedEventId)
         .order("departure_time", { ascending: true });
 
       if (error) throw error;
@@ -73,6 +78,18 @@ const Flights = () => {
     }
   };
 
+  if (!selectedEventId) {
+    return (
+      <DashboardLayout title="Flights">
+        <EmptyPlaceholder
+          title="No event selected"
+          description="Please select an event from the dropdown to view and manage flights."
+          icon={<Plane className="h-8 w-8 text-muted-foreground" />}
+        />
+      </DashboardLayout>
+    );
+  }
+
   if (loading) {
     return <DashboardLayout title="Flights">Loading...</DashboardLayout>;
   }
@@ -82,7 +99,7 @@ const Flights = () => {
       <DashboardLayout title="Flights">
         <EmptyPlaceholder
           title="No flights added yet"
-          description="Add flights to start managing participant travel."
+          description="Add flights to start managing air travel."
           icon={<Plane className="h-8 w-8 text-muted-foreground" />}
           action={{
             label: "Add Flight",

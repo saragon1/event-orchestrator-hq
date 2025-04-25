@@ -16,22 +16,27 @@ import {
 import { Bus, Plus, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEventStore } from "@/stores/event-store";
 
 const Buses = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [buses, setBuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const selectedEventId = useEventStore((state) => state.selectedEventId);
 
   useEffect(() => {
-    fetchBuses();
-  }, []);
+    if (selectedEventId) {
+      fetchBuses();
+    }
+  }, [selectedEventId]);
 
   const fetchBuses = async () => {
     try {
       const { data, error } = await supabase
         .from("buses")
         .select("*")
+        .eq("event_id", selectedEventId)
         .order("departure_time", { ascending: true });
 
       if (error) throw error;
@@ -72,6 +77,18 @@ const Buses = () => {
       });
     }
   };
+
+  if (!selectedEventId) {
+    return (
+      <DashboardLayout title="Buses">
+        <EmptyPlaceholder
+          title="No event selected"
+          description="Please select an event from the dropdown to view and manage buses."
+          icon={<Bus className="h-8 w-8 text-muted-foreground" />}
+        />
+      </DashboardLayout>
+    );
+  }
 
   if (loading) {
     return <DashboardLayout title="Buses">Loading...</DashboardLayout>;
