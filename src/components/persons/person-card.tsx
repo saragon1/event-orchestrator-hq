@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Hotel, Plane, Bus } from "lucide-react";
+import { Eye, Pencil, Hotel, Plane, Bus } from "lucide-react";
 
 interface PersonCardProps {
   id: string;

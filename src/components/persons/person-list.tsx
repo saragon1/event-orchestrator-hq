@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useEventStore } from "@/stores/event-store";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,10 @@ interface Person {
   name: string;
   email: string;
   role?: string;
+  phone?: string;
+  hasHotel?: boolean;
+  hasFlight?: boolean;
+  hasBus?: boolean;
 }
 
 interface PersonListProps {
@@ -26,6 +31,7 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const selectedEventId = useEventStore((state) => state.selectedEventId);
+  const [persons, setPersons] = useState<Person[]>([]);
 
   useEffect(() => {
     const fetchPersons = async () => {
@@ -62,7 +68,7 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
           }));
 
           setPersons(personsWithBookings);
-        } else {
+        } else if (personsData) {
           setPersons(personsData.map(person => ({
             ...person,
             hasHotel: false,
