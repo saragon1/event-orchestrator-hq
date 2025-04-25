@@ -102,12 +102,13 @@ const Events = () => {
     fetchEvents();
   };
 
-  const handleSelectEvent = (eventId: string) => {
+  const handleSelectEvent = async (eventId: string) => {
     setSelectedEventId(eventId);
     toast({
       title: "Event selected",
       description: "You are now viewing data for this event",
     });
+    navigate("/dashboard");
   };
 
   return (
@@ -164,7 +165,10 @@ const Events = () => {
                   {event.description && <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>}
                 </CardContent>
                 <CardFooter className="gap-2 justify-between flex-wrap">
-                  <Button variant="outline" onClick={() => handleSelectEvent(event.id)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSelectEvent(event.id)}
+                  >
                     Set as active
                   </Button>
                   <div className="flex gap-2">

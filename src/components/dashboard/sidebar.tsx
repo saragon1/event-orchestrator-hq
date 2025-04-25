@@ -2,8 +2,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserPlus, Hotel, Plane, Bus, Users, Calendar } from "lucide-react";
+import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Separator } from "@/components/ui/separator";
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -41,12 +42,28 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const navItems = [
+  const mainNavItems = [
     {
-      icon: Calendar,
-      label: "Events",
-      href: "/events",
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      href: "/dashboard",
     },
+  ];
+
+  const eventResourcesNavItems = [
+    {
+      icon: Bus,
+      label: "Buses",
+      href: "/buses",
+    },
+    {
+      icon: Plane,
+      label: "Flights",
+      href: "/flights",
+    },
+  ];
+
+  const staticResourcesNavItems = [
     {
       icon: Users,
       label: "Persons",
@@ -56,16 +73,6 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
       icon: Hotel,
       label: "Hotels",
       href: "/hotels",
-    },
-    {
-      icon: Plane,
-      label: "Flights",
-      href: "/flights",
-    },
-    {
-      icon: Bus,
-      label: "Buses",
-      href: "/buses",
     },
   ];
 
@@ -83,16 +90,46 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
         <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
           Event Orchestrator
         </h2>
-        <div className="space-y-1 py-2">
-          {navItems.map((item) => (
-            <SidebarItem
-              key={item.href}
-              icon={item.icon}
-              label={item.label}
-              href={item.href}
-              isActive={location.pathname === item.href}
-            />
-          ))}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            {mainNavItems.map((item) => (
+              <SidebarItem
+                key={item.href}
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                isActive={location.pathname === item.href}
+              />
+            ))}
+          </div>
+
+          <Separator className="mx-3" />
+          <div className="space-y-1">
+            <h3 className="px-4 text-sm font-medium text-muted-foreground">Event Resources</h3>
+            {eventResourcesNavItems.map((item) => (
+              <SidebarItem
+                key={item.href}
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                isActive={location.pathname === item.href}
+              />
+            ))}
+          </div>
+
+          <Separator className="mx-3" />
+          <div className="space-y-1">
+            <h3 className="px-4 text-sm font-medium text-muted-foreground">Static Resources</h3>
+            {staticResourcesNavItems.map((item) => (
+              <SidebarItem
+                key={item.href}
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                isActive={location.pathname === item.href}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </aside>

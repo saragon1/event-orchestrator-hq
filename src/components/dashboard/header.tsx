@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { EventSelector } from "./event-selector";
+import { Link } from "react-router-dom";
 
 interface DashboardHeaderProps {
   isOpen: boolean;
@@ -27,7 +28,9 @@ export const DashboardHeader = ({
         <EventSelector />
         <h1 className="text-xl font-semibold">{title}</h1>
         <div className="ml-auto flex items-center space-x-4">
-          {/* We can add user profile, notifications, etc. here later */}
+          <Button variant="ghost" asChild>
+            <Link to="/events">All Events</Link>
+          </Button>
         </div>
       </div>
     </header>
