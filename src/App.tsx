@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,8 @@ import Flights from "./pages/Flights";
 import Buses from "./pages/Buses";
 import Events from "./pages/Events";
 import EventForm from "./pages/EventForm";
+import FlightForm from "./pages/FlightForm";
+import BusForm from "./pages/BusForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,7 +37,11 @@ const App = () => (
           <Route path="/hotels/new" element={<HotelForm />} />
           <Route path="/hotels/:id" element={<HotelForm />} />
           <Route path="/flights" element={<Flights />} />
+          <Route path="/flights/new" element={<FlightForm />} />
+          <Route path="/flights/:id" element={<FlightForm />} />
           <Route path="/buses" element={<Buses />} />
+          <Route path="/buses/new" element={<BusForm />} />
+          <Route path="/buses/:id" element={<BusForm />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
