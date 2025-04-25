@@ -306,3 +306,4 @@ const HotelForm = () => {
 };
 
 export default HotelForm;
+
