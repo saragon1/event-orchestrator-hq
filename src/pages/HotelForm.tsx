@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// Define the schema with proper transformation for the rating field
+// Define the schema for form validation
 const formSchema = z.object({
   name: z.string().min(1, "Hotel name is required"),
   address: z.string().min(1, "Address is required"),
@@ -27,34 +27,10 @@ const formSchema = z.object({
   country: z.string().min(1, "Country is required"),
   phone: z.string().optional(),
   website: z.string().url().optional().or(z.literal("")),
-  rating: z.string()
-    .optional()
-    .transform((val) => {
-      // Transform empty string to null
-      if (!val) return null;
-      // Parse the value to a number
-      const parsed = parseInt(val, 10);
-      // Return null if parsing fails
-      return isNaN(parsed) ? null : parsed;
-    })
-    .refine(
-      (val) => val === null || (val >= 1 && val <= 5),
-      "Rating must be between 1 and 5"
-    ),
+  rating: z.string().optional(), // Keep as string throughout the form handling
 });
 
-// Create a type that represents the form values before transformation
-type FormInputValues = {
-  name: string;
-  address: string;
-  city: string;
-  country: string;
-  phone: string;
-  website: string;
-  rating: string;
-};
-
-// Create a type that represents the form values after transformation
+// Create a type that represents the form values
 type FormValues = z.infer<typeof formSchema>;
 
 const HotelForm = () => {
@@ -63,7 +39,7 @@ const HotelForm = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  const form = useForm<FormInputValues>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -116,21 +92,19 @@ const HotelForm = () => {
     fetchHotel();
   }, [id, form, toast]);
 
-  const onSubmit = async (values: FormInputValues) => {
+  const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
 
     try {
-      // The schema will transform the rating string to number or null
-      const transformedValues = formSchema.parse(values);
-      
+      // Manually transform the rating to a number or null before sending to the database
       const hotelData = {
-        name: transformedValues.name,
-        address: transformedValues.address,
-        city: transformedValues.city,
-        country: transformedValues.country,
-        phone: transformedValues.phone || null,
-        website: transformedValues.website || null,
-        rating: transformedValues.rating, // Will be number or null after transformation
+        name: values.name,
+        address: values.address,
+        city: values.city,
+        country: values.country,
+        phone: values.phone || null,
+        website: values.website || null,
+        rating: values.rating ? parseInt(values.rating, 10) : null, // Convert string to number or null
       };
 
       let response;
@@ -306,4 +280,3 @@ const HotelForm = () => {
 };
 
 export default HotelForm;
-
