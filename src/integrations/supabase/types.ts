@@ -64,6 +64,120 @@ export type Database = {
           },
         ]
       }
+      cars: {
+        Row: {
+          id: string
+          event_id: string
+          type: "private" | "ncc" | "taxi"
+          company: string
+          driver_name: string
+          driver_phone: string
+          departure_location: string
+          arrival_location: string
+          departure_time: string
+          arrival_time: string
+          capacity: number
+          license_plate: string
+          notes: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          company: string
+          driver_name: string
+          driver_phone: string
+          departure_location: string
+          arrival_location: string
+          departure_time: string
+          arrival_time: string
+          capacity: number
+          license_plate: string
+          notes?: string | null
+          created_at?: string | null
+          type: "private" | "ncc" | "taxi"
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          company?: string
+          driver_name?: string
+          driver_phone?: string
+          departure_location?: string
+          arrival_location?: string
+          departure_time?: string
+          arrival_time?: string
+          capacity?: number
+          license_plate?: string
+          notes?: string | null
+          created_at?: string | null
+          type?: "private" | "ncc" | "taxi"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cars_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      car_reservations: {
+        Row: {
+          id: string
+          event_id: string
+          car_id: string
+          person_id: string
+          confirmation_number: string | null
+          is_driver: boolean
+          notes: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          car_id: string
+          person_id: string
+          confirmation_number?: string | null
+          is_driver: boolean
+          notes?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          car_id?: string
+          person_id?: string
+          confirmation_number?: string | null
+          is_driver?: boolean
+          notes?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_reservations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_reservations_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_reservations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       buses: {
         Row: {
           arrival_location: string
@@ -441,7 +555,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      car_type: "private" | "ncc" | "taxi"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -556,6 +670,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      type: [
+        "sedan",
+        "suv",
+        "van",
+        "bus",
+        "limousine"
+      ]
+    },
   },
 } as const

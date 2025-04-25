@@ -30,6 +30,7 @@ interface Car {
   departure_time: string;
   arrival_time: string;
   driver_name: string;
+  driver_phone: string;
   license_plate: string;
   capacity: number;
 }
@@ -197,6 +198,10 @@ export default function CarDetails() {
             <div>
               <h3 className="font-semibold">Company / Driver</h3>
               <p>{car.company} / {car.driver_name}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold">Driver Phone</h3>
+              <p>{car.driver_phone || '-'}</p>
             </div>
             <div>
               <h3 className="font-semibold">License Plate</h3>

@@ -19,27 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEventStore } from "@/stores/event-store";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 const formSchema = z.object({
-  type: z.string().min(1, "Car type is required"),
+  type: z.enum(["private", "ncc", "taxi"]).refine((val) => val !== undefined, "Car type is required"),
   company: z.string().optional(),
   driverName: z.string().min(1, "Driver name is required"),
+  driverPhone: z.string().min(1, "Driver phone is required"),
   licensePlate: z.string().min(1, "License plate is required"),
   departureLocation: z.string().min(1, "Pickup location is required"),
   arrivalLocation: z.string().min(1, "Dropoff location is required"),
@@ -63,6 +54,7 @@ const CarForm = () => {
       type: "private",
       company: "",
       driverName: "",
+      driverPhone: "",
       licensePlate: "",
       departureLocation: "",
       arrivalLocation: "",
@@ -91,6 +83,7 @@ const CarForm = () => {
             type: data.type,
             company: data.company || "",
             driverName: data.driver_name,
+            driverPhone: data.driver_phone,
             licensePlate: data.license_plate,
             departureLocation: data.departure_location,
             arrivalLocation: data.arrival_location,
@@ -131,6 +124,7 @@ const CarForm = () => {
         type: values.type,
         company: values.company,
         driver_name: values.driverName,
+        driver_phone: values.driverPhone,
         license_plate: values.licensePlate,
         departure_location: values.departureLocation,
         arrival_location: values.arrivalLocation,
@@ -149,7 +143,7 @@ const CarForm = () => {
       } else {
         response = await supabase
           .from("cars")
-          .insert([carData]);
+          .insert(carData);
       }
 
       if (response.error) throw response.error;
@@ -189,7 +183,7 @@ const CarForm = () => {
                       <FormLabel>Car Type</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         disabled={isLoading}
                       >
                         <FormControl>
@@ -240,12 +234,48 @@ const CarForm = () => {
 
                 <FormField
                   control={form.control}
+                  name="driverPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Driver Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123-456-7890" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="licensePlate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>License Plate</FormLabel>
                       <FormControl>
                         <Input placeholder="ABC123" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="4"
+                          {...field}
+                          disabled={isLoading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -312,26 +342,6 @@ const CarForm = () => {
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="capacity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="4"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <div className="flex justify-end gap-2">
                 <Button
