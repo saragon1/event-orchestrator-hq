@@ -2,7 +2,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserPlus, Hotel, Plane, Bus, Users } from "lucide-react";
+import { UserPlus, Hotel, Plane, Bus, Users, Calendar } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SidebarItemProps {
@@ -42,6 +42,11 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
   const isMobile = useIsMobile();
 
   const navItems = [
+    {
+      icon: Calendar,
+      label: "Events",
+      href: "/events",
+    },
     {
       icon: Users,
       label: "Persons",

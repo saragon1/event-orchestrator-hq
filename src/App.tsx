@@ -9,6 +9,8 @@ import Persons from "./pages/Persons";
 import Hotels from "./pages/Hotels";
 import Flights from "./pages/Flights";
 import Buses from "./pages/Buses";
+import Events from "./pages/Events";
+import EventForm from "./pages/EventForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +24,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/new" element={<EventForm />} />
+          <Route path="/events/:id" element={<EventForm />} />
           <Route path="/persons" element={<Persons />} />
           <Route path="/hotels" element={<Hotels />} />
           <Route path="/flights" element={<Flights />} />

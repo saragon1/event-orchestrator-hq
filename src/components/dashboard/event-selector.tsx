@@ -7,14 +7,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEventStore } from '@/stores/event-store';
 
 export const EventSelector = () => {
-  const { events, selectedEventId, fetchEvents, setSelectedEventId } = useEventStore();
+  const { events, selectedEventId, fetchEvents, setSelectedEventId, isLoading } = useEventStore();
 
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  if (isLoading) {
+    return <Skeleton className="w-[250px] h-10" />;
+  }
 
   return (
     <Select
@@ -25,11 +30,17 @@ export const EventSelector = () => {
         <SelectValue placeholder="Select an event" />
       </SelectTrigger>
       <SelectContent>
-        {events.map((event) => (
-          <SelectItem key={event.id} value={event.id}>
-            {event.name}
+        {events.length === 0 ? (
+          <SelectItem value="no-events" disabled>
+            No events available
           </SelectItem>
-        ))}
+        ) : (
+          events.map((event) => (
+            <SelectItem key={event.id} value={event.id}>
+              {event.name}
+            </SelectItem>
+          ))
+        )}
       </SelectContent>
     </Select>
   );
