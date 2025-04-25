@@ -112,8 +112,8 @@ export function TicketFormModal({
     try {
       const table = type === 'flight' ? 'flight_tickets' : 'bus_tickets';
       
-      // Create the data object with the correct ID field based on ticket type
-      const data = {
+      // Create the data object with the common fields
+      const data: any = {
         person_id: values.person_id,
         event_id: eventId,
         seat: values.seat,
@@ -121,13 +121,11 @@ export function TicketFormModal({
         notes: values.notes
       };
 
-      // Add the appropriate ID field based on the ticket type
+      // Add the appropriate transport ID field based on the ticket type
       if (type === 'flight') {
-        // For flight tickets
-        data['flight_id'] = transportId;
+        data.flight_id = transportId;
       } else {
-        // For bus tickets
-        data['bus_id'] = transportId;
+        data.bus_id = transportId;
       }
       
       if (ticketId) {
