@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+// Define the schema with proper transformation for the rating field
 const formSchema = z.object({
   name: z.string().min(1, "Hotel name is required"),
   address: z.string().min(1, "Address is required"),
@@ -42,6 +43,18 @@ const formSchema = z.object({
     ),
 });
 
+// Create a type that represents the form values before transformation
+type FormInputValues = {
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  phone: string;
+  website: string;
+  rating: string;
+};
+
+// Create a type that represents the form values after transformation
 type FormValues = z.infer<typeof formSchema>;
 
 const HotelForm = () => {
@@ -50,7 +63,7 @@ const HotelForm = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  const form = useForm<FormValues>({
+  const form = useForm<FormInputValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -103,19 +116,21 @@ const HotelForm = () => {
     fetchHotel();
   }, [id, form, toast]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormInputValues) => {
     setIsLoading(true);
 
     try {
-      // The rating is already correctly transformed by zod schema
+      // The schema will transform the rating string to number or null
+      const transformedValues = formSchema.parse(values);
+      
       const hotelData = {
-        name: values.name,
-        address: values.address,
-        city: values.city,
-        country: values.country,
-        phone: values.phone || null,
-        website: values.website || null,
-        rating: values.rating, // This is now properly transformed to number or null by zod
+        name: transformedValues.name,
+        address: transformedValues.address,
+        city: transformedValues.city,
+        country: transformedValues.country,
+        phone: transformedValues.phone || null,
+        website: transformedValues.website || null,
+        rating: transformedValues.rating, // Will be number or null after transformation
       };
 
       let response;
