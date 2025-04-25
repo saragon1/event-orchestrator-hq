@@ -9,7 +9,358 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bus_tickets: {
+        Row: {
+          bus_id: string
+          confirmation_number: string | null
+          created_at: string | null
+          event_id: string
+          id: string
+          notes: string | null
+          person_id: string
+          seat: string | null
+        }
+        Insert: {
+          bus_id: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          notes?: string | null
+          person_id: string
+          seat?: string | null
+        }
+        Update: {
+          bus_id?: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          notes?: string | null
+          person_id?: string
+          seat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_tickets_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_tickets_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buses: {
+        Row: {
+          arrival_location: string
+          arrival_time: string
+          capacity: number
+          company: string
+          created_at: string | null
+          departure_location: string
+          departure_time: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          arrival_location: string
+          arrival_time: string
+          capacity: number
+          company: string
+          created_at?: string | null
+          departure_location: string
+          departure_time: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          arrival_location?: string
+          arrival_time?: string
+          capacity?: number
+          company?: string
+          created_at?: string | null
+          departure_location?: string
+          departure_time?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string
+          id: string
+          location: string
+          name: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date: string
+          id?: string
+          location: string
+          name: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string
+          id?: string
+          location?: string
+          name?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
+      flight_tickets: {
+        Row: {
+          confirmation_number: string | null
+          created_at: string | null
+          event_id: string
+          flight_id: string
+          id: string
+          notes: string | null
+          person_id: string
+          seat: string | null
+        }
+        Insert: {
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id: string
+          flight_id: string
+          id?: string
+          notes?: string | null
+          person_id: string
+          seat?: string | null
+        }
+        Update: {
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id?: string
+          flight_id?: string
+          id?: string
+          notes?: string | null
+          person_id?: string
+          seat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flight_tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flight_tickets_flight_id_fkey"
+            columns: ["flight_id"]
+            isOneToOne: false
+            referencedRelation: "flights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flight_tickets_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flights: {
+        Row: {
+          airline: string
+          arrival_airport: string
+          arrival_time: string
+          created_at: string | null
+          departure_airport: string
+          departure_time: string
+          event_id: string
+          flight_number: string
+          id: string
+        }
+        Insert: {
+          airline: string
+          arrival_airport: string
+          arrival_time: string
+          created_at?: string | null
+          departure_airport: string
+          departure_time: string
+          event_id: string
+          flight_number: string
+          id?: string
+        }
+        Update: {
+          airline?: string
+          arrival_airport?: string
+          arrival_time?: string
+          created_at?: string | null
+          departure_airport?: string
+          departure_time?: string
+          event_id?: string
+          flight_number?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_reservations: {
+        Row: {
+          check_in: string
+          check_out: string
+          confirmation_number: string | null
+          created_at: string | null
+          event_id: string
+          hotel_id: string
+          id: string
+          notes: string | null
+          person_id: string
+          room_type: string | null
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id: string
+          hotel_id: string
+          id?: string
+          notes?: string | null
+          person_id: string
+          room_type?: string | null
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id?: string
+          hotel_id?: string
+          id?: string
+          notes?: string | null
+          person_id?: string
+          room_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_reservations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_reservations_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_reservations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotels: {
+        Row: {
+          address: string
+          city: string
+          country: string
+          created_at: string | null
+          id: string
+          name: string
+          phone: string | null
+          rating: number | null
+          website: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          country: string
+          created_at?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          rating?: number | null
+          website?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      persons: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
