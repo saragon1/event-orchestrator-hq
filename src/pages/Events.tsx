@@ -145,7 +145,7 @@ const Events = () => {
             icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
             action={!searchTerm ? {
               label: "Add Event",
-              href: "/events/new",
+              onClick: () => navigate("/events/new")
             } : undefined}
           />
         ) : (

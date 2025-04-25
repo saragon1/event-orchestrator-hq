@@ -102,10 +102,11 @@ const EventForm = () => {
     setIsLoading(true);
 
     try {
+      // Convert Date objects to ISO strings for Supabase
       const eventData = {
         name: values.name,
-        start_date: values.start_date,
-        end_date: values.end_date,
+        start_date: values.start_date.toISOString().split('T')[0],
+        end_date: values.end_date.toISOString().split('T')[0],
         location: values.location,
         description: values.description || null,
       };
