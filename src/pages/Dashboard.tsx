@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { useEventStore } from "@/stores/event-store";
 import { useEventManagement } from "@/hooks/use-event-management";
@@ -21,6 +21,7 @@ const Dashboard = () => {
     assignedPersons,
     availableHotels,
     assignedHotels,
+    isLoading,
     fetchAvailablePersons,
     fetchAssignedPersons,
     assignPersonToEvent,
@@ -30,6 +31,21 @@ const Dashboard = () => {
     assignHotelToEvent,
     removeHotelFromEvent,
   } = useEventManagement(selectedEventId || '');
+
+  // Refresh data when modal opens
+  useEffect(() => {
+    if (isPersonModalOpen) {
+      fetchAvailablePersons();
+      fetchAssignedPersons();
+    }
+  }, [isPersonModalOpen]);
+
+  useEffect(() => {
+    if (isHotelModalOpen) {
+      fetchAvailableHotels();
+      fetchAssignedHotels();
+    }
+  }, [isHotelModalOpen]);
 
   return (
     <DashboardLayout title="Dashboard">
@@ -59,7 +75,7 @@ const Dashboard = () => {
         </div>
 
         <ResourceManagementModal
-          title={`Manage Persons for ${selectedEvent?.name}`}
+          title={`Manage Persons for ${selectedEvent?.name || ''}`}
           isOpen={isPersonModalOpen}
           onClose={() => setIsPersonModalOpen(false)}
           availableResources={availablePersons}
@@ -67,10 +83,11 @@ const Dashboard = () => {
           onAssign={assignPersonToEvent}
           onRemove={removePersonFromEvent}
           resourceType="person"
+          isLoading={isLoading.persons}
         />
 
         <ResourceManagementModal
-          title={`Manage Hotels for ${selectedEvent?.name}`}
+          title={`Manage Hotels for ${selectedEvent?.name || ''}`}
           isOpen={isHotelModalOpen}
           onClose={() => setIsHotelModalOpen(false)}
           availableResources={availableHotels}
@@ -78,6 +95,7 @@ const Dashboard = () => {
           onAssign={assignHotelToEvent}
           onRemove={removeHotelFromEvent}
           resourceType="hotel"
+          isLoading={isLoading.hotels}
         />
       </div>
     </DashboardLayout>
