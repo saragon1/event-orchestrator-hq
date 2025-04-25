@@ -74,10 +74,74 @@ interface ParticipantWithStatus extends Person {
   carReservations: CarReservation[];
   hotelReservationId?: string | null;
   invite_status: "waiting_invite" | "invited" | "confirmed" | "declined";
+  event_role: "attendee" | "vip" | "staff" | "speaker" | "other";
 }
 
 interface ExtendedWindow extends Window {
   refreshParticipantsTable?: () => void;
+}
+
+// Generic participant field update modal component
+interface ParticipantFieldModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  participant: ParticipantWithStatus | null;
+  title: string;
+  fieldName: string;
+  currentValue: string;
+  options: { value: string; label: string }[];
+  onValueChange: (value: string) => void;
+  onSave: () => void;
+}
+
+function ParticipantFieldModal({
+  isOpen,
+  onOpenChange,
+  participant,
+  title,
+  fieldName,
+  currentValue,
+  options,
+  onValueChange,
+  onSave
+}: ParticipantFieldModalProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        {participant && (
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Participant: {participant.name}</p>
+              <p className="text-sm text-muted-foreground">{participant.email}</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{fieldName}</p>
+              <Select 
+                value={currentValue} 
+                onValueChange={(value: string) => onValueChange(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={`Select ${fieldName.toLowerCase()}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={onSave}>Update {fieldName}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
@@ -90,6 +154,10 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<ParticipantWithStatus | null>(null);
   const [newStatus, setNewStatus] = useState<"waiting_invite" | "invited" | "confirmed" | "declined">("waiting_invite");
+  
+  // Role modal state
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [newRole, setNewRole] = useState<"attendee" | "vip" | "staff" | "speaker" | "other">("attendee");
 
   // Function to manually trigger refresh
   const refreshData = () => {
@@ -108,14 +176,15 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
         // 1. Fetch all persons assigned to this event
         const { data: eventPersons, error: eventPersonsError } = await supabase
           .from('event_persons')
-          .select('persons:person_id(*), invite_status')
+          .select('persons:person_id(*), invite_status, event_role')
           .eq('event_id', selectedEventId);
 
         if (eventPersonsError) throw eventPersonsError;
 
         const personsData = eventPersons?.map(item => ({
           ...item.persons,
-          invite_status: item.invite_status
+          invite_status: item.invite_status,
+          event_role: item.event_role || "attendee"
         })) || [];
 
         // 2. Fetch hotel assignments
@@ -209,7 +278,8 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
           flightTickets: flightTicketsByPerson.get(person.id) || [],
           busTickets: busTicketsByPerson.get(person.id) || [],
           carReservations: carReservationsByPerson.get(person.id) || [],
-          invite_status: person.invite_status
+          invite_status: person.invite_status,
+          event_role: person.event_role
         }));
 
         setParticipants(enrichedParticipants);
@@ -474,6 +544,71 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
     return status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
+  // Handle opening the role modal
+  const handleOpenRoleModal = (participant: ParticipantWithStatus) => {
+    setSelectedParticipant(participant);
+    setNewRole(participant.event_role);
+    setIsRoleModalOpen(true);
+  };
+
+  // Update the participant role
+  const handleUpdateRole = async () => {
+    if (!selectedParticipant || !selectedEventId) return;
+
+    try {
+      const { error } = await supabase
+        .from('event_persons')
+        .update({ event_role: newRole })
+        .eq('event_id', selectedEventId)
+        .eq('person_id', selectedParticipant.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Role Updated",
+        description: `${selectedParticipant.name}'s role has been updated to ${newRole}`,
+      });
+
+      // Update the local state
+      setParticipants(prev => 
+        prev.map(p => 
+          p.id === selectedParticipant.id 
+            ? { ...p, event_role: newRole } 
+            : p
+        )
+      );
+
+      setIsRoleModalOpen(false);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update participant role",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Get the badge variant based on role
+  const getRoleBadgeVariant = (role: string): "default" | "destructive" | "secondary" | "outline" => {
+    switch (role) {
+      case 'vip':
+        return 'default';
+      case 'speaker':
+        return 'secondary';
+      case 'staff':
+        return 'outline';
+      case 'attendee':
+      default:
+        return 'outline';
+    }
+  };
+
+  // Format role for display
+  const formatRole = (role: string) => {
+    return role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   if (!selectedEventId) {
     return (
       <div className="flex items-center justify-center p-6 h-[200px] bg-muted/20 rounded-md">
@@ -510,6 +645,7 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Event Role</TableHead>
             <TableHead className="text-center">
               <div className="flex items-center justify-center">
                 <Hotel className="h-4 w-4 mr-1" /> Hotel
@@ -547,6 +683,15 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
                   {formatStatus(participant.invite_status)}
                 </Badge>
               </TableCell>
+              <TableCell>
+                <Badge 
+                  variant={getRoleBadgeVariant(participant.event_role)}
+                  className="cursor-pointer"
+                  onClick={() => handleOpenRoleModal(participant)}
+                >
+                  {formatRole(participant.event_role)}
+                </Badge>
+              </TableCell>
               <TableCell className="text-center">
                 <div className="flex items-center justify-center">
                   {renderHotelStatus(participant)}
@@ -567,42 +712,41 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
       </Table>
 
       {/* Status Change Modal */}
-      <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Update Participant Status</DialogTitle>
-          </DialogHeader>
-          {selectedParticipant && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Participant: {selectedParticipant.name}</p>
-                <p className="text-sm text-muted-foreground">{selectedParticipant.email}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Status</p>
-                <Select 
-                  value={newStatus} 
-                  onValueChange={(value: "waiting_invite" | "invited" | "confirmed" | "declined") => setNewStatus(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="waiting_invite">Waiting Invite</SelectItem>
-                    <SelectItem value="invited">Invited</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="declined">Declined</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsStatusModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateStatus}>Update Status</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ParticipantFieldModal
+        isOpen={isStatusModalOpen}
+        onOpenChange={setIsStatusModalOpen}
+        participant={selectedParticipant}
+        title="Update Participant Status"
+        fieldName="Status"
+        currentValue={newStatus}
+        options={[
+          { value: "waiting_invite", label: "Waiting Invite" },
+          { value: "invited", label: "Invited" },
+          { value: "confirmed", label: "Confirmed" },
+          { value: "declined", label: "Declined" }
+        ]}
+        onValueChange={(value: string) => setNewStatus(value as "waiting_invite" | "invited" | "confirmed" | "declined")}
+        onSave={handleUpdateStatus}
+      />
+
+      {/* Role Change Modal */}
+      <ParticipantFieldModal
+        isOpen={isRoleModalOpen}
+        onOpenChange={setIsRoleModalOpen}
+        participant={selectedParticipant}
+        title="Update Participant Role"
+        fieldName="Role"
+        currentValue={newRole}
+        options={[
+          { value: "attendee", label: "Attendee" },
+          { value: "vip", label: "VIP" },
+          { value: "staff", label: "Staff" },
+          { value: "speaker", label: "Speaker" },
+          { value: "other", label: "Other" }
+        ]}
+        onValueChange={(value: string) => setNewRole(value as "attendee" | "vip" | "staff" | "speaker" | "other")}
+        onSave={handleUpdateRole}
+      />
     </div>
   );
 } 
