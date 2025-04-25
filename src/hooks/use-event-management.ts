@@ -67,8 +67,8 @@ export function useEventManagement(eventId: string) {
       
       // Only apply the filter if there are assigned IDs
       if (assignedIds.length > 0) {
-        // Fix: Use the 'in' operator with the 'not' prefix correctly
-        query = query.not('id', 'in', assignedIds);
+        // Fix: We need to pass the array directly, not as a comma-separated string
+        query = query.not('id', 'in', `(${assignedIds.map(id => `"${id}"`).join(',')})`);
       }
       
       const { data, error } = await query;
@@ -207,8 +207,8 @@ export function useEventManagement(eventId: string) {
       
       // Only apply the filter if there are assigned IDs
       if (assignedIds.length > 0) {
-        // Fix: Use the 'in' operator with the 'not' prefix correctly
-        query = query.not('id', 'in', assignedIds);
+        // Fix: We need to pass the array directly, not as a comma-separated string
+        query = query.not('id', 'in', `(${assignedIds.map(id => `"${id}"`).join(',')})`);
       }
       
       const { data, error } = await query;
