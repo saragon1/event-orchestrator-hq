@@ -262,18 +262,21 @@ export type Database = {
         Row: {
           created_at: string | null
           event_id: string
+          invite_status: "waiting_invite" | "invited" | "confirmed" | "declined"
           id: string
           person_id: string
         }
         Insert: {
           created_at?: string | null
           event_id: string
+          invite_status?: "waiting_invite" | "invited" | "confirmed" | "declined"
           id?: string
           person_id: string
         }
         Update: {
           created_at?: string | null
           event_id?: string
+          invite_status?: "waiting_invite" | "invited" | "confirmed" | "declined"
           id?: string
           person_id?: string
         }
@@ -556,6 +559,7 @@ export type Database = {
     }
     Enums: {
       car_type: "private" | "ncc" | "taxi"
+      invite_status: "waiting_invite" | "invited" | "confirmed" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -19,6 +19,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 interface Person {
   id: string;
@@ -58,6 +73,7 @@ interface ParticipantWithStatus extends Person {
   busTickets: BusTicket[];
   carReservations: CarReservation[];
   hotelReservationId?: string | null;
+  invite_status: "waiting_invite" | "invited" | "confirmed" | "declined";
 }
 
 interface ExtendedWindow extends Window {
@@ -69,6 +85,11 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { toast } = useToast();
+  
+  // Status modal state
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantWithStatus | null>(null);
+  const [newStatus, setNewStatus] = useState<"waiting_invite" | "invited" | "confirmed" | "declined">("waiting_invite");
 
   // Function to manually trigger refresh
   const refreshData = () => {
@@ -87,12 +108,15 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
         // 1. Fetch all persons assigned to this event
         const { data: eventPersons, error: eventPersonsError } = await supabase
           .from('event_persons')
-          .select('persons:person_id(*)')
+          .select('persons:person_id(*), invite_status')
           .eq('event_id', selectedEventId);
 
         if (eventPersonsError) throw eventPersonsError;
 
-        const personsData = eventPersons?.map(item => item.persons) || [];
+        const personsData = eventPersons?.map(item => ({
+          ...item.persons,
+          invite_status: item.invite_status
+        })) || [];
 
         // 2. Fetch hotel assignments
         const { data: eventHotels, error: eventHotelsError } = await supabase
@@ -184,7 +208,8 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
           hotelReservationId: hotelReservationByPerson.get(person.id) || null,
           flightTickets: flightTicketsByPerson.get(person.id) || [],
           busTickets: busTicketsByPerson.get(person.id) || [],
-          carReservations: carReservationsByPerson.get(person.id) || []
+          carReservations: carReservationsByPerson.get(person.id) || [],
+          invite_status: person.invite_status
         }));
 
         setParticipants(enrichedParticipants);
@@ -384,6 +409,71 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
     );
   };
 
+  // Handle opening the status modal
+  const handleOpenStatusModal = (participant: ParticipantWithStatus) => {
+    setSelectedParticipant(participant);
+    setNewStatus(participant.invite_status);
+    setIsStatusModalOpen(true);
+  };
+
+  // Update the participant status
+  const handleUpdateStatus = async () => {
+    if (!selectedParticipant || !selectedEventId) return;
+
+    try {
+      const { error } = await supabase
+        .from('event_persons')
+        .update({ invite_status: newStatus })
+        .eq('event_id', selectedEventId)
+        .eq('person_id', selectedParticipant.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status Updated",
+        description: `${selectedParticipant.name}'s status has been updated to ${newStatus.replace('_', ' ')}`,
+      });
+
+      // Update the local state
+      setParticipants(prev => 
+        prev.map(p => 
+          p.id === selectedParticipant.id 
+            ? { ...p, invite_status: newStatus } 
+            : p
+        )
+      );
+
+      setIsStatusModalOpen(false);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update participant status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Get the badge variant based on status
+  const getStatusBadgeVariant = (status: string): "default" | "destructive" | "secondary" | "outline" => {
+    switch (status) {
+      case 'confirmed':
+        return 'default';
+      case 'invited':
+        return 'secondary';
+      case 'declined':
+        return 'destructive';
+      case 'waiting_invite':
+      default:
+        return 'outline';
+    }
+  };
+
+  // Format status for display
+  const formatStatus = (status: string) => {
+    return status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   if (!selectedEventId) {
     return (
       <div className="flex items-center justify-center p-6 h-[200px] bg-muted/20 rounded-md">
@@ -419,6 +509,7 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead className="text-center">
               <div className="flex items-center justify-center">
                 <Hotel className="h-4 w-4 mr-1" /> Hotel
@@ -447,6 +538,15 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
               <TableCell className="font-medium">{participant.name}</TableCell>
               <TableCell>{participant.email}</TableCell>
               <TableCell>{participant.role || '-'}</TableCell>
+              <TableCell>
+                <Badge 
+                  variant={getStatusBadgeVariant(participant.invite_status)}
+                  className="cursor-pointer"
+                  onClick={() => handleOpenStatusModal(participant)}
+                >
+                  {formatStatus(participant.invite_status)}
+                </Badge>
+              </TableCell>
               <TableCell className="text-center">
                 <div className="flex items-center justify-center">
                   {renderHotelStatus(participant)}
@@ -465,6 +565,44 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
           ))}
         </TableBody>
       </Table>
+
+      {/* Status Change Modal */}
+      <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Participant Status</DialogTitle>
+          </DialogHeader>
+          {selectedParticipant && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Participant: {selectedParticipant.name}</p>
+                <p className="text-sm text-muted-foreground">{selectedParticipant.email}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Status</p>
+                <Select 
+                  value={newStatus} 
+                  onValueChange={(value: "waiting_invite" | "invited" | "confirmed" | "declined") => setNewStatus(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="waiting_invite">Waiting Invite</SelectItem>
+                    <SelectItem value="invited">Invited</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStatusModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateStatus}>Update Status</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

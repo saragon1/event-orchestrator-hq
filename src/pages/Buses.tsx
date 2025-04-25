@@ -17,11 +17,14 @@ import { Bus, Plus, Edit, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEventStore } from "@/stores/event-store";
+import { Database } from "@/integrations/supabase/types";
+
+type Bus = Database["public"]["Tables"]["buses"]["Row"];
 
 const Buses = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [buses, setBuses] = useState<any[]>([]);
+  const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const selectedEventId = useEventStore((state) => state.selectedEventId);
 

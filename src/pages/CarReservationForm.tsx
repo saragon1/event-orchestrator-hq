@@ -28,42 +28,25 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEventStore } from "@/stores/event-store";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
+import { Database } from "@/integrations/supabase/types";
 
-interface Person {
+// Define simpler interfaces to avoid deep type instantiation
+interface SimplePerson {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
 }
 
-interface Car {
-  id: string;
-  car_type: string;
-  company: string;
-  driver_name: string;
-  departure_location: string;
-  arrival_location: string;
-  departure_time: string;
-  arrival_time: string;
-  capacity: number;
-  license_plate: string;
+type PersonWithEmail = SimplePerson;
+type Car = Database["public"]["Tables"]["cars"]["Row"];
+
+// Extended car type with reservations count
+interface CarWithReservationsCount extends Car {
   reservations_count: number;
-  event_id: string;
 }
 
 interface CarWithReservations extends Omit<Car, "reservations_count"> {
   car_reservations: { id: string }[];
-}
-
-interface CarReservation {
-  id: string;
-  car_id: string;
-  person_id: string;
-  confirmation_number: string | null;
-  is_driver: boolean;
-  notes: string | null;
-  event_id: string;
-  created_at: string;
 }
 
 const formSchema = z.object({
@@ -89,9 +72,9 @@ const CarReservationForm = () => {
 
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [persons, setPersons] = useState<Person[]>([]);
-  const [cars, setCars] = useState<Car[]>([]);
-  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [persons, setPersons] = useState<PersonWithEmail[]>([]);
+  const [cars, setCars] = useState<CarWithReservationsCount[]>([]);
+  const [selectedCar, setSelectedCar] = useState<CarWithReservationsCount | null>(null);
   const selectedEventId = useEventStore((state) => state.selectedEventId);
 
   const form = useForm<FormValues>({
@@ -110,9 +93,10 @@ const CarReservationForm = () => {
       if (!selectedEventId) return;
 
       try {
+        // @ts-expect-error - Bypass deep instantiation error
         const { data, error } = await supabase
           .from("persons")
-          .select("id, first_name, last_name, email")
+          .select("id, name, email")
           .eq("event_id", selectedEventId);
 
         if (error) throw error;
@@ -132,11 +116,10 @@ const CarReservationForm = () => {
       if (!selectedEventId) return;
 
       try {
-        // Get cars for this event with reservation count
         const { data, error } = await supabase
           .from("cars")
           .select(`
-            id, car_type, company, driver_name, departure_location, arrival_location, 
+            id, type, company, driver_name, departure_location, arrival_location, 
             departure_time, arrival_time, capacity, license_plate, event_id,
             car_reservations:car_reservations(id)
           `)
@@ -147,7 +130,7 @@ const CarReservationForm = () => {
         const carsWithCount = (data || []).map((car: CarWithReservations) => ({
           ...car,
           reservations_count: car.car_reservations?.length || 0,
-        }));
+        })) as CarWithReservationsCount[];
 
         setCars(carsWithCount);
       } catch (error) {
@@ -236,9 +219,13 @@ const CarReservationForm = () => {
     setIsLoading(true);
 
     try {
-      const reservationData = {
-        ...values,
+      const reservationData: Database["public"]["Tables"]["car_reservations"]["Insert"] = {
         event_id: selectedEventId,
+        car_id: values.car_id,
+        person_id: values.person_id,
+        confirmation_number: values.confirmation_number || null,
+        is_driver: values.is_driver,
+        notes: values.notes || null,
       };
 
       let response;
@@ -253,7 +240,7 @@ const CarReservationForm = () => {
         // Create new reservation
         response = await supabase
           .from("car_reservations")
-          .insert([reservationData]);
+          .insert(reservationData);
       }
 
       const { error } = response;
@@ -280,7 +267,7 @@ const CarReservationForm = () => {
   };
 
   const formatCarOption = (car: Car) => {
-    return `${car.car_type.toUpperCase()} - ${car.departure_location} to ${car.arrival_location} (${format(new Date(car.departure_time), "dd/MM/yyyy HH:mm")})`;
+    return `${car.type.toUpperCase()} - ${car.departure_location} to ${car.arrival_location} (${format(new Date(car.departure_time), "dd/MM/yyyy HH:mm")})`;
   };
 
   return (
@@ -343,7 +330,7 @@ const CarReservationForm = () => {
                         <SelectContent>
                           {persons.map((person) => (
                             <SelectItem key={person.id} value={person.id}>
-                              {person.first_name} {person.last_name} ({person.email})
+                              {person.name} ({person.email})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -397,7 +384,7 @@ const CarReservationForm = () => {
                   <h3 className="font-medium mb-2">Car Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p><strong>Car Type:</strong> {selectedCar.car_type}</p>
+                      <p><strong>Car Type:</strong> {selectedCar.type}</p>
                       <p><strong>Company:</strong> {selectedCar.company || "-"}</p>
                       <p><strong>Driver:</strong> {selectedCar.driver_name}</p>
                       <p><strong>License Plate:</strong> {selectedCar.license_plate || "-"}</p>
