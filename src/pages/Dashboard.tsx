@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEventStore } from "@/stores/event-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResourceManagementModal } from "@/components/resource-management/resource-management-modal";
+import { useEventManagement } from "@/hooks/use-event-management";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -24,11 +25,34 @@ const Dashboard = () => {
     state.events.find(event => event.id === selectedEventId)
   );
 
+  const {
+    availablePersons,
+    assignedPersons,
+    availableHotels,
+    assignedHotels,
+    fetchAvailablePersons,
+    fetchAssignedPersons,
+    assignPersonToEvent,
+    removePersonFromEvent,
+    fetchAvailableHotels,
+    fetchAssignedHotels,
+    assignHotelToEvent,
+    removeHotelFromEvent,
+  } = useEventManagement(selectedEventId || '');
+
+  useEffect(() => {
+    if (selectedEventId) {
+      fetchAvailablePersons();
+      fetchAssignedPersons();
+      fetchAvailableHotels();
+      fetchAssignedHotels();
+    }
+  }, [selectedEventId]);
+
   useEffect(() => {
     const fetchStats = async () => {
       setIsLoading(true);
       try {
-        // Fetch total counts and event-specific bookings
         const [
           { count: totalPersons },
           { count: totalHotels },
@@ -63,20 +87,17 @@ const Dashboard = () => {
     fetchStats();
   }, [selectedEventId]);
 
-  const renderStatCard = (label, value, icon, color, className = '') => (
-    <Card key={label} className={`animate-fade-in ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{label}</CardTitle>
-        {React.createElement(icon, { className: `h-4 w-4 ${color}` })}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
-  );
+  const openPersonManagementModal = () => {
+    if (selectedEventId) {
+      setIsPersonModalOpen(true);
+    }
+  };
 
-  const openPersonManagementModal = () => setIsPersonModalOpen(true);
-  const openHotelManagementModal = () => setIsHotelModalOpen(true);
+  const openHotelManagementModal = () => {
+    if (selectedEventId) {
+      setIsHotelModalOpen(true);
+    }
+  };
 
   return (
     <DashboardLayout title="Dashboard">
@@ -109,20 +130,60 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* First row of metrics */}
         <div className="grid gap-4 md:grid-cols-2">
-          {renderStatCard("Total Persons", stats.totalPersons, Users, "text-blue-500", "md:col-span-1")}
-          {renderStatCard("Total Hotels", stats.totalHotels, Hotel, "text-purple-500", "md:col-span-1")}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Persons</CardTitle>
+              <Users className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalPersons}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Hotels</CardTitle>
+              <Hotel className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalHotels}</div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Second row of metrics */}
         <div className="grid gap-4 md:grid-cols-3">
-          {renderStatCard("Hotel Bookings", stats.hotelBookings, Hotel, "text-indigo-500")}
-          {renderStatCard("Flight Tickets", stats.flightTickets, Plane, "text-green-500")}
-          {renderStatCard("Bus Reservations", stats.busReservations, Bus, "text-orange-500")}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Hotel Bookings</CardTitle>
+              <Hotel className="h-4 w-4 text-indigo-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.hotelBookings}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Flight Tickets</CardTitle>
+              <Plane className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.flightTickets}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bus Reservations</CardTitle>
+              <Bus className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.busReservations}</div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Event Management Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 mt-6">
           <Card>
             <CardHeader>
@@ -139,10 +200,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Placeholder for persons list or summary */}
               <p className="text-muted-foreground">
                 {selectedEvent 
-                  ? `${stats.hotelBookings} persons assigned to this event` 
+                  ? `${assignedPersons.length} persons assigned to this event` 
                   : "Select an event to manage persons"}
               </p>
             </CardContent>
@@ -163,59 +223,36 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Placeholder for hotels list or summary */}
               <p className="text-muted-foreground">
                 {selectedEvent 
-                  ? `${stats.hotelBookings} hotels assigned to this event` 
+                  ? `${assignedHotels.length} hotels assigned to this event` 
                   : "Select an event to manage hotels"}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Persons Management Modal */}
-        <Dialog open={isPersonModalOpen} onOpenChange={setIsPersonModalOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Manage Persons for {selectedEvent?.name}</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Available Persons Panel */}
-              <div className="border rounded p-4">
-                <h3 className="font-semibold mb-4">Available Persons</h3>
-                {/* Implement list of available persons */}
-              </div>
-              
-              {/* Assigned Persons Panel */}
-              <div className="border rounded p-4">
-                <h3 className="font-semibold mb-4">Assigned Persons</h3>
-                {/* Implement list of assigned persons */}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ResourceManagementModal
+          title={`Manage Persons for ${selectedEvent?.name}`}
+          isOpen={isPersonModalOpen}
+          onClose={() => setIsPersonModalOpen(false)}
+          availableResources={availablePersons}
+          assignedResources={assignedPersons}
+          onAssign={assignPersonToEvent}
+          onRemove={removePersonFromEvent}
+          resourceType="person"
+        />
 
-        {/* Hotels Management Modal */}
-        <Dialog open={isHotelModalOpen} onOpenChange={setIsHotelModalOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Manage Hotels for {selectedEvent?.name}</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Available Hotels Panel */}
-              <div className="border rounded p-4">
-                <h3 className="font-semibold mb-4">Available Hotels</h3>
-                {/* Implement list of available hotels */}
-              </div>
-              
-              {/* Assigned Hotels Panel */}
-              <div className="border rounded p-4">
-                <h3 className="font-semibold mb-4">Assigned Hotels</h3>
-                {/* Implement list of assigned hotels */}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ResourceManagementModal
+          title={`Manage Hotels for ${selectedEvent?.name}`}
+          isOpen={isHotelModalOpen}
+          onClose={() => setIsHotelModalOpen(false)}
+          availableResources={availableHotels}
+          assignedResources={assignedHotels}
+          onAssign={assignHotelToEvent}
+          onRemove={removeHotelFromEvent}
+          resourceType="hotel"
+        />
       </div>
     </DashboardLayout>
   );
