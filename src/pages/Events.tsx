@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useEventStore } from "@/stores/event-store";
@@ -40,6 +39,7 @@ const Events = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { setSelectedEventId } = useEventStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEvents();
