@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car, Train, Calendar, Map } from "lucide-react";
+import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car, Train, Calendar, Map, BarChart } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -40,55 +41,60 @@ interface DashboardSidebarProps {
 export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) => {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   const mainNavItems = [
     {
       icon: LayoutDashboard,
-      label: "Dashboard",
+      label: t("common.dashboard"),
       href: "/dashboard",
     },
     {
       icon: List,
-      label: "Events",
+      label: t("common.events"),
       href: "/events",
     },
-
+    {
+      icon: BarChart,
+      label: t("common.statistics"),
+      href: "/statistics",
+    },
   ];
 
   const eventResourcesNavItems = [
     {
       icon: Calendar,
-      label: "Event Schedule",
+      label: t("common.eventSchedule"),
       href: "/event-schedule",
     },
     {
       icon: Map,
-      label: "Event Map",
+      label: t("common.eventMap"),
       href: "/event-map",
     },
     {
       icon: Bus,
-      label: "Buses",
+      label: t("common.buses"),
       href: "/buses",
     },
     {
       icon: Plane,
-      label: "Flights",
+      label: t("common.flights"),
       href: "/flights",
     },
     {
       icon: BedDouble,
-      label: "Hotel Reservations",
+      label: t("common.hotelReservations"),
       href: "/hotel-reservations",
     },
     {
       icon: Car,
-      label: "Cars",
+      label: t("common.cars"),
       href: "/cars",
     },
     {
       icon: Train,
-      label: "Trains",
+      label: t("common.trains"),
       href: "/trains",
     },
   ];
@@ -96,12 +102,12 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
   const staticResourcesNavItems = [
     {
       icon: Users,
-      label: "Persons",
+      label: t("common.persons"),
       href: "/persons",
     },
     {
       icon: Hotel,
-      label: "Hotels",
+      label: t("common.hotels"),
       href: "/hotels",
     },
   ];

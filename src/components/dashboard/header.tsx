@@ -1,8 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { EventSelector } from "./event-selector";
 import { Link } from "react-router-dom";
+import { LanguageSelector } from "./language-selector";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface DashboardHeaderProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ export const DashboardHeader = ({
   setIsOpen,
   title,
 }: DashboardHeaderProps) => {
+  const { t } = useTranslation();
+  
   return (
     <header className="border-b bg-background sticky top-0 z-30">
       <div className="flex h-16 items-center px-4 gap-4">
@@ -28,8 +31,9 @@ export const DashboardHeader = ({
         <EventSelector />
         <h1 className="text-xl font-semibold">{title}</h1>
         <div className="ml-auto flex items-center space-x-4">
+          <LanguageSelector />
           <Button variant="ghost" asChild>
-            <Link to="/events">All Events</Link>
+            <Link to="/events">{t("common.allEvents")}</Link>
           </Button>
         </div>
       </div>

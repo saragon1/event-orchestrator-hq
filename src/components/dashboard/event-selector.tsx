@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import {
   Select,
@@ -9,9 +8,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEventStore } from '@/stores/event-store';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const EventSelector = () => {
   const { events, selectedEventId, fetchEvents, setSelectedEventId, isLoading } = useEventStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchEvents();
@@ -27,12 +28,12 @@ export const EventSelector = () => {
       onValueChange={setSelectedEventId}
     >
       <SelectTrigger className="w-[250px]">
-        <SelectValue placeholder="Select an event" />
+        <SelectValue placeholder={t("common.selectEvent")} />
       </SelectTrigger>
       <SelectContent>
         {events.length === 0 ? (
           <SelectItem value="no-events" disabled>
-            No events available
+            {t("common.noResults")}
           </SelectItem>
         ) : (
           events.map((event) => (

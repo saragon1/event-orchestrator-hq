@@ -27,6 +27,7 @@ import TrainForm from "./pages/TrainForm";
 import TrainDetails from "./pages/TrainDetails";
 import EventSchedule from "./pages/EventSchedule";
 import EventMap from "./pages/EventMap";
+import Statistics from "./pages/Statistics";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/events" element={<Events />} />
           <Route path="/events/new" element={<EventForm />} />
           <Route path="/events/:id" element={<EventForm />} />
+          <Route path="/statistics" element={<Statistics />} />
           <Route path="/event-schedule" element={<EventSchedule />} />
           <Route path="/event-map" element={<EventMap />} />
           <Route path="/persons" element={<Persons />} />

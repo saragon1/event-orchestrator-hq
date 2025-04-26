@@ -1,0 +1,116 @@
+export const it = {
+  common: {
+    language: "Lingua",
+    dashboard: "Dashboard",
+    events: "Eventi",
+    persons: "Persone",
+    hotels: "Hotel",
+    flights: "Voli",
+    buses: "Autobus",
+    cars: "Auto",
+    trains: "Treni",
+    eventSchedule: "Programma Evento",
+    eventMap: "Mappa Evento",
+    hotelReservations: "Prenotazioni Hotel",
+    allEvents: "Tutti gli Eventi",
+    loading: "Caricamento...",
+    edit: "Modifica",
+    create: "Crea",
+    delete: "Elimina",
+    cancel: "Annulla",
+    save: "Salva",
+    details: "Dettagli",
+    actions: "Azioni",
+    view: "Visualizza",
+    new: "Nuovo",
+    statistics: "Statistiche",
+    search: "Cerca",
+    noResults: "Nessun risultato trovato",
+    selectEvent: "Seleziona Evento"
+  },
+  dashboard: {
+    title: "Dashboard",
+    stats: {
+      persons: "Persone",
+      hotels: "Hotel",
+      flights: "Voli",
+      buses: "Autobus"
+    }
+  },
+  persons: {
+    name: "Nome",
+    email: "Email",
+    phone: "Telefono",
+    role: "Ruolo",
+    createPerson: "Crea Persona",
+    editPerson: "Modifica Persona",
+    personDetails: "Dettagli Persona",
+    personItinerary: "Itinerario Persona",
+    accommodation: "Alloggio",
+    travelTimeline: "Cronologia Viaggi"
+  },
+  events: {
+    name: "Nome",
+    startDate: "Data Inizio",
+    endDate: "Data Fine",
+    location: "Luogo",
+    description: "Descrizione",
+    createEvent: "Crea Evento",
+    editEvent: "Modifica Evento"
+  },
+  hotels: {
+    name: "Nome",
+    address: "Indirizzo",
+    city: "Città",
+    country: "Paese",
+    createHotel: "Crea Hotel",
+    editHotel: "Modifica Hotel"
+  },
+  flights: {
+    flightNumber: "Numero Volo",
+    airline: "Compagnia Aerea",
+    departureAirport: "Aeroporto di Partenza",
+    arrivalAirport: "Aeroporto di Arrivo",
+    departureDate: "Data di Partenza",
+    arrivalDate: "Data di Arrivo",
+    createFlight: "Crea Volo",
+    editFlight: "Modifica Volo",
+    flightDetails: "Dettagli Volo",
+    passengers: "Passeggeri"
+  },
+  buses: {
+    busNumber: "Numero Autobus",
+    company: "Compagnia",
+    departureLocation: "Luogo di Partenza",
+    arrivalLocation: "Luogo di Arrivo",
+    departureDate: "Data di Partenza",
+    arrivalDate: "Data di Arrivo",
+    createBus: "Crea Autobus",
+    editBus: "Modifica Autobus",
+    busDetails: "Dettagli Autobus",
+    passengers: "Passeggeri"
+  },
+  cars: {
+    licensePlate: "Targa",
+    model: "Modello",
+    brand: "Marca",
+    color: "Colore",
+    createCar: "Crea Auto",
+    editCar: "Modifica Auto",
+    carDetails: "Dettagli Auto",
+    driver: "Conducente",
+    passengers: "Passeggeri"
+  },
+  trains: {
+    trainNumber: "Numero Treno",
+    company: "Compagnia",
+    departureStation: "Stazione di Partenza",
+    arrivalStation: "Stazione di Arrivo",
+    departureDate: "Data di Partenza",
+    arrivalDate: "Data di Arrivo",
+    createTrain: "Crea Treno",
+    editTrain: "Modifica Treno",
+    trainDetails: "Dettagli Treno",
+    passengers: "Passeggeri"
+  }
+}; 
