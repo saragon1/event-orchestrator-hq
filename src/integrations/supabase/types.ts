@@ -168,7 +168,7 @@ export type Database = {
           arrival_location: string | null
           arrival_time: string | null
           capacity: number | null
-          car_type: string
+          car_type: Database["public"]["Enums"]["car_type"] | null
           company: string | null
           created_at: string | null
           departure_location: string | null
@@ -179,13 +179,12 @@ export type Database = {
           id: string
           license_plate: string | null
           notes: string | null
-          type: Database["public"]["Enums"]["car_type"] | null
         }
         Insert: {
           arrival_location?: string | null
           arrival_time?: string | null
           capacity?: number | null
-          car_type: string
+          car_type?: Database["public"]["Enums"]["car_type"] | null
           company?: string | null
           created_at?: string | null
           departure_location?: string | null
@@ -196,13 +195,12 @@ export type Database = {
           id?: string
           license_plate?: string | null
           notes?: string | null
-          type?: Database["public"]["Enums"]["car_type"] | null
         }
         Update: {
           arrival_location?: string | null
           arrival_time?: string | null
           capacity?: number | null
-          car_type?: string
+          car_type?: Database["public"]["Enums"]["car_type"] | null
           company?: string | null
           created_at?: string | null
           departure_location?: string | null
@@ -213,7 +211,6 @@ export type Database = {
           id?: string
           license_plate?: string | null
           notes?: string | null
-          type?: Database["public"]["Enums"]["car_type"] | null
         }
         Relationships: [
           {
@@ -303,8 +300,83 @@ export type Database = {
           },
         ]
       }
+      event_schedules: {
+        Row: {
+          capacity: number | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          end_time: string
+          event_id: string | null
+          id: string
+          is_public: boolean | null
+          location: string | null
+          materials: Json | null
+          schedule_type: string
+          speaker_ids: string[] | null
+          start_time: string
+          status: string
+          tags: string[] | null
+          title: string
+          track: string | null
+          updated_at: string | null
+          virtual_meeting_url: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_time: string
+          event_id?: string | null
+          id?: string
+          is_public?: boolean | null
+          location?: string | null
+          materials?: Json | null
+          schedule_type: string
+          speaker_ids?: string[] | null
+          start_time: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          track?: string | null
+          updated_at?: string | null
+          virtual_meeting_url?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_time?: string
+          event_id?: string | null
+          id?: string
+          is_public?: boolean | null
+          location?: string | null
+          materials?: Json | null
+          schedule_type?: string
+          speaker_ids?: string[] | null
+          start_time?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          track?: string | null
+          updated_at?: string | null
+          virtual_meeting_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_schedules_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          address: string | null
           created_at: string | null
           description: string | null
           end_date: string
@@ -314,6 +386,7 @@ export type Database = {
           start_date: string
         }
         Insert: {
+          address?: string | null
           created_at?: string | null
           description?: string | null
           end_date: string
@@ -323,6 +396,7 @@ export type Database = {
           start_date: string
         }
         Update: {
+          address?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string

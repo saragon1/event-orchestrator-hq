@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, cn } from "@/lib/utils";
 import { HotelReservationFormModal } from "@/components/hotel-reservations/hotel-reservation-form-modal";
 import React from "react";
+import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
 
 interface HotelReservation {
   id: string;
@@ -204,11 +205,19 @@ export default function HotelReservations() {
             </div>
           ) : filteredReservations.length === 0 ? (
             <div className="flex justify-center items-center p-8 bg-muted/20 rounded-lg">
-              <p className="text-muted-foreground">
+              
                 {personFilter 
-                  ? "No hotel reservations found for this person" 
-                  : "No hotel reservations found for this event"}
-              </p>
+                  ? <p className="text-muted-foreground">No hotel reservations found for this person</p> 
+                  : <EmptyPlaceholder
+                      title="No hotel reservations found"
+                      description="Add a hotel reservation to start managing hotel reservations"
+                      icon={<Hotel className="h-8 w-8 text-muted-foreground" />}
+                      action={{
+                        label: "Add Reservation",
+                        onClick: () => handleOpenModal()
+                      }}
+                    />
+                  }
             </div>
           ) : (
             <Table>

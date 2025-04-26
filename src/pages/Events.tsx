@@ -23,15 +23,9 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useEventStore } from "@/stores/event-store";
 import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
+import { Database } from "@/integrations/supabase/types";
 
-interface Event {
-  id: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  location: string;
-  description: string | null;
-}
+type Event = Database["public"]["Tables"]["events"]["Row"];
 
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -162,6 +156,7 @@ const Events = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm mb-2"><strong>Location:</strong> {event.location}</p>
+                  <p className="text-sm mb-2"><strong>Address:</strong> {event.address}</p>
                   {event.description && <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>}
                 </CardContent>
                 <CardFooter className="gap-2 justify-between flex-wrap">

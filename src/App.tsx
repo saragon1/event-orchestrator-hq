@@ -24,6 +24,7 @@ import CarDetails from "./pages/CarDetails";
 import Trains from "./pages/Trains";
 import TrainForm from "./pages/TrainForm";
 import TrainDetails from "./pages/TrainDetails";
+import EventSchedule from "./pages/EventSchedule";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/events" element={<Events />} />
           <Route path="/events/new" element={<EventForm />} />
           <Route path="/events/:id" element={<EventForm />} />
+          <Route path="/event-schedule" element={<EventSchedule />} />
           <Route path="/persons" element={<Persons />} />
           <Route path="/persons/new" element={<PersonForm />} />
           <Route path="/persons/:id" element={<PersonForm />} />

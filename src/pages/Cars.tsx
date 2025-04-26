@@ -21,7 +21,7 @@ import { formatDate } from "@/lib/utils";
 
 interface CarItem {
   id: string;
-  type: 'private' | 'ncc' | 'taxi';
+  car_type: 'private' | 'ncc' | 'taxi';
   company: string;
   driver_name: string;
   departure_location: string;
@@ -120,15 +120,11 @@ const Cars = () => {
   const renderContent = () => {
     if (!selectedEventId) {
       return (
-        <EmptyPlaceholder>
-          <div className="flex flex-col items-center justify-center text-center p-8">
-            <Car className="h-10 w-10 text-muted-foreground mb-4" />
-            <div className="text-xl font-medium mb-2">No event selected</div>
-            <div className="text-sm text-muted-foreground mb-4">
-              Please select an event to view cars
-            </div>
-          </div>
-        </EmptyPlaceholder>
+        <EmptyPlaceholder 
+          title="No event selected" 
+          description="Please select an event to view cars"
+          icon={<Car className="h-8 w-8 text-muted-foreground" />}
+        />
       );
     }
 
@@ -142,19 +138,15 @@ const Cars = () => {
 
     if (cars.length === 0) {
       return (
-        <EmptyPlaceholder>
-          <div className="flex flex-col items-center justify-center text-center p-8">
-            <Car className="h-10 w-10 text-muted-foreground mb-4" />
-            <div className="text-xl font-medium mb-2">No cars found</div>
-            <div className="text-sm text-muted-foreground mb-4">
-              Add a car to start managing transportation
-            </div>
-            <Button onClick={() => navigate("/cars/new")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Car
-            </Button>
-          </div>
-        </EmptyPlaceholder>
+        <EmptyPlaceholder 
+          title="No cars found" 
+          description="Add a car to start managing transportation"
+          icon={<Car className="h-8 w-8 text-muted-foreground" />}
+          action={{
+            label: "Add Car",
+            onClick: () => navigate("/cars/new")
+          }}
+        />
       );
     }
 
@@ -174,7 +166,7 @@ const Cars = () => {
         </TableHeader>
         <TableBody>
           {cars.map((car) => {
-            const { label, variant } = getCarTypeLabel(car.type);
+            const { label, variant } = getCarTypeLabel(car.car_type);
             
             return (
               <TableRow key={car.id}>

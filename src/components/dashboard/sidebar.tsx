@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car, Train } from "lucide-react";
+import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car, Train, Calendar } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 
@@ -52,10 +52,15 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
       label: "Events",
       href: "/events",
     },
-    
+
   ];
 
   const eventResourcesNavItems = [
+    {
+      icon: Calendar,
+      label: "Event Schedule",
+      href: "/event-schedule",
+    },
     {
       icon: Bus,
       label: "Buses",

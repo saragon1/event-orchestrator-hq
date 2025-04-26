@@ -37,6 +37,7 @@ const formSchema = z.object({
     required_error: "End date is required",
   }),
   location: z.string().min(1, "Location is required"),
+  address: z.string().min(1, "Address is required"),
   description: z.string().optional(),
 }).refine(data => data.end_date >= data.start_date, {
   message: "End date must be on or after start date",
@@ -108,6 +109,7 @@ const EventForm = () => {
         start_date: values.start_date.toISOString().split('T')[0],
         end_date: values.end_date.toISOString().split('T')[0],
         location: values.location,
+        address: values.address,
         description: values.description || null,
       };
 
@@ -253,6 +255,21 @@ const EventForm = () => {
                     <FormLabel>Location</FormLabel>
                     <FormControl>
                       <Input placeholder="San Francisco, CA" {...field} disabled={isLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 Main St, San Francisco, CA" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
