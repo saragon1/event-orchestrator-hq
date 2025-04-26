@@ -26,7 +26,15 @@ export const it = {
     statistics: "Statistiche",
     search: "Cerca",
     noResults: "Nessun risultato trovato",
-    selectEvent: "Seleziona Evento"
+    selectEvent: "Seleziona Evento",
+    pleaseSelectEventFirst: "Seleziona un evento prima",
+    error: "Errore",
+    seat: "Posto",
+    confirmation: "Conferma",
+    notes: "Note",
+    passenger: "Passegero",
+    success: "Successo",
+    ticketDeletedSuccessfully: "Biglietto eliminato con successo",
   },
   dashboard: {
     title: "Dashboard",
@@ -88,7 +96,10 @@ export const it = {
     createBus: "Crea Autobus",
     editBus: "Modifica Autobus",
     busDetails: "Dettagli Autobus",
-    passengers: "Passeggeri"
+    passengers: "Passeggeri",
+    departure: "Partenza",
+    arrival: "Arrivo",
+    capacity: "Capacità"
   },
   cars: {
     licensePlate: "Targa",

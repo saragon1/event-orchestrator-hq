@@ -18,6 +18,7 @@ import { useEventStore } from "@/stores/event-store";
 import { TicketFormModal } from "@/components/tickets/TicketFormModal";
 import { cn } from "@/lib/utils";
 import React from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Bus {
   id: string;
@@ -38,6 +39,7 @@ interface BusTicket {
 }
 
 export default function BusDetails() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { toast } = useToast();
@@ -130,15 +132,15 @@ export default function BusDetails() {
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Ticket deleted successfully",
+        title: t("common.success"),
+        description: t("common.ticketDeletedSuccessfully"),
       });
 
       fetchTickets();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Could not delete ticket",
+        title: t("common.error"),
+        description: t("common.couldNotDeleteTicket"),
         variant: "destructive",
       });
     }
@@ -151,53 +153,53 @@ export default function BusDetails() {
 
   if (!bus || !selectedEventId) {
     return (
-      <DashboardLayout title="Bus Details">
+      <DashboardLayout title={t("buses.busDetails")}>
         <div className="p-4">Loading...</div>
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Bus Details">
+    <DashboardLayout title={t("buses.busDetails")}>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bus className="h-5 w-5" />
-            Bus Details
+            {t("buses.busDetails")}
           </CardTitle>
           <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Add Ticket
+            {t("common.addTicket")}
           </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div>
-              <h3 className="font-semibold">Company</h3>
+              <h3 className="font-semibold">{t("buses.company")}</h3>
               <p>{bus.company}</p>
             </div>
             <div>
-              <h3 className="font-semibold">Departure</h3>
+              <h3 className="font-semibold">{t("buses.departure")}</h3>
               <p>{bus.departure_location} - {new Date(bus.departure_time).toLocaleString()}</p>
             </div>
             <div>
-              <h3 className="font-semibold">Arrival</h3>
+              <h3 className="font-semibold">{t("buses.arrival")}</h3>
               <p>{bus.arrival_location} - {new Date(bus.arrival_time).toLocaleString()}</p>
             </div>
             <div>
-              <h3 className="font-semibold">Capacity</h3>
-              <p>{bus.capacity} seats</p>
+              <h3 className="font-semibold">{t("buses.capacity")}</h3>
+              <p>{bus.capacity} {t("common.seats")}</p>
             </div>
           </div>
 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Passenger</TableHead>
-                <TableHead>Seat</TableHead>
-                <TableHead>Confirmation</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("common.passenger")}</TableHead>
+                <TableHead>{t("common.seat")}</TableHead>
+                <TableHead>{t("common.confirmation")}</TableHead>
+                <TableHead>{t("common.notes")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
