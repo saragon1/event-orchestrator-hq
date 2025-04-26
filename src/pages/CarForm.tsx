@@ -48,9 +48,9 @@ interface AddressSuggestion {
 const formSchema = z.object({
   car_type: z.enum(["private", "ncc", "taxi"]).refine((val) => val !== undefined, "Car type is required"),
   company: z.string().optional(),
-  driverName: z.string().min(1, "Driver name is required"),
-  driverPhone: z.string().min(1, "Driver phone is required"),
-  licensePlate: z.string().min(1, "License plate is required"),
+  driverName: z.string().optional(),
+  driverPhone: z.string().optional(),
+  licensePlate: z.string().optional(),
   departureLocation: z.string().min(1, "Pickup location is required"),
   arrivalLocation: z.string().min(1, "Dropoff location is required"),
   departureTime: z.string().min(1, "Pickup time is required"),
@@ -253,10 +253,10 @@ const CarForm = () => {
     try {
       const carData = {
         car_type: values.car_type,
-        company: values.company,
-        driver_name: values.driverName,
-        driver_phone: values.driverPhone,
-        license_plate: values.licensePlate,
+        company: values.company || null,
+        driver_name: values.driverName || null,
+        driver_phone: values.driverPhone || null,
+        license_plate: values.licensePlate || null,
         departure_location: values.departureLocation,
         arrival_location: values.arrivalLocation,
         departure_time: values.departureTime,
@@ -354,7 +354,7 @@ const CarForm = () => {
                   name="driverName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driver Name</FormLabel>
+                      <FormLabel>Driver Name (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="John Doe" {...field} disabled={isLoading} />
                       </FormControl>
@@ -368,7 +368,7 @@ const CarForm = () => {
                   name="driverPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driver Phone</FormLabel>
+                      <FormLabel>Driver Phone (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="123-456-7890" {...field} disabled={isLoading} />
                       </FormControl>
@@ -384,7 +384,7 @@ const CarForm = () => {
                   name="licensePlate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>License Plate</FormLabel>
+                      <FormLabel>License Plate (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="ABC123" {...field} disabled={isLoading} />
                       </FormControl>

@@ -1,6 +1,7 @@
-
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+
+const EVENT_STORAGE_KEY = 'selectedEventId';
 
 interface Event {
   id: string;
@@ -22,7 +23,7 @@ interface EventStore {
 
 export const useEventStore = create<EventStore>((set) => ({
   events: [],
-  selectedEventId: null,
+  selectedEventId: localStorage.getItem(EVENT_STORAGE_KEY),
   isLoading: false,
   error: null,
   fetchEvents: async () => {
@@ -38,13 +39,24 @@ export const useEventStore = create<EventStore>((set) => ({
       set({ events: data, isLoading: false });
       // Select the first event by default if none is selected
       if (data.length > 0) {
-        set((state) => ({
-          selectedEventId: state.selectedEventId || data[0].id
-        }));
+        set((state) => {
+          const eventId = state.selectedEventId || data[0].id;
+          if (!state.selectedEventId) {
+            localStorage.setItem(EVENT_STORAGE_KEY, eventId);
+          }
+          return { selectedEventId: eventId };
+        });
       }
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
   },
-  setSelectedEventId: (id) => set({ selectedEventId: id }),
+  setSelectedEventId: (id) => {
+    if (id) {
+      localStorage.setItem(EVENT_STORAGE_KEY, id);
+    } else {
+      localStorage.removeItem(EVENT_STORAGE_KEY);
+    }
+    set({ selectedEventId: id });
+  },
 }));

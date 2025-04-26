@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cn } from "@/lib/utils";
-import { useOnClickOutside } from "@/hooks/use-on-click-outside";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { AddressSuggestion } from "@/lib/geocoding";
 
 // Define the schema for form validation
 const formSchema = z.object({
@@ -34,29 +34,11 @@ const formSchema = z.object({
 // Create a type that represents the form values
 type FormValues = z.infer<typeof formSchema>;
 
-// Interface for address suggestion
-interface AddressSuggestion {
-  place_id: number;
-  display_name: string;
-  address: {
-    road?: string;
-    house_number?: string;
-    city?: string;
-    country?: string;
-    postcode?: string;
-  };
-}
-
 const HotelForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,78 +52,6 @@ const HotelForm = () => {
       rating: "",
     },
   });
-
-  // Close suggestions when clicking outside
-  useOnClickOutside(suggestionsRef, () => setShowSuggestions(false));
-
-  // Debounced fetch address suggestions
-  const debouncedFetchSuggestions = (query: string) => {
-    // Clear any existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Set a new timer to execute after 800ms
-    debounceTimerRef.current = setTimeout(() => {
-      fetchAddressSuggestions(query);
-    }, 800);
-  };
-
-  // Fetch address suggestions
-  const fetchAddressSuggestions = async (query: string) => {
-    if (!query || query.length < 3) {
-      setAddressSuggestions([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&addressdetails=1&limit=5`,
-        {
-          headers: {
-            "Accept-Language": "en",
-          },
-        }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAddressSuggestions(data);
-        setShowSuggestions(data.length > 0);
-      }
-    } catch (error) {
-      console.error("Error fetching address suggestions:", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Handle selecting an address suggestion
-  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    const address = suggestion.address;
-    const formattedAddress = [
-      address.house_number,
-      address.road
-    ].filter(Boolean).join(" ");
-    
-    form.setValue("address", formattedAddress);
-    if (address.city) form.setValue("city", address.city);
-    if (address.country) form.setValue("country", address.country);
-    
-    setShowSuggestions(false);
-  };
 
   useEffect(() => {
     const fetchHotel = async () => {
@@ -182,6 +92,22 @@ const HotelForm = () => {
 
     fetchHotel();
   }, [id, form, toast]);
+
+  const handleAddressSelect = (suggestion: AddressSuggestion) => {
+    // Set city and country from the suggestion if available
+    const address = suggestion.address;
+    if (address) {
+      // Set city based on hierarchy: city > town > village > county
+      const city = address.city || address.town || address.village || address.county || "";
+      if (city) {
+        form.setValue("city", city);
+      }
+      
+      if (address.country) {
+        form.setValue("country", address.country);
+      }
+    }
+  };
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -258,50 +184,19 @@ const HotelForm = () => {
                 control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem className="relative">
+                  <FormItem>
                     <FormLabel>Address</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="123 Main St" 
-                        {...field} 
+                      <AddressAutocomplete
+                        value={field.value}
+                        onChange={field.onChange}
+                        onSelect={handleAddressSelect}
+                        placeholder="Search for an address"
                         disabled={isLoading}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          debouncedFetchSuggestions(e.target.value);
-                        }}
-                        onFocus={() => {
-                          if (addressSuggestions.length > 0) {
-                            setShowSuggestions(true);
-                          }
-                        }}
+                        required
+                        error={form.formState.errors.address?.message}
                       />
                     </FormControl>
-                    {showSuggestions && (
-                      <div 
-                        ref={suggestionsRef}
-                        className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-sm max-h-[200px] overflow-auto"
-                      >
-                        {isSearching ? (
-                          <div className="p-2 text-sm text-muted-foreground">
-                            Searching...
-                          </div>
-                        ) : addressSuggestions.length > 0 ? (
-                          addressSuggestions.map((suggestion) => (
-                            <div
-                              key={suggestion.place_id}
-                              className="p-2 text-sm hover:bg-muted cursor-pointer"
-                              onClick={() => handleSelectSuggestion(suggestion)}
-                            >
-                              {suggestion.display_name}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-muted-foreground">
-                            No suggestions found
-                          </div>
-                        )}
-                      </div>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}

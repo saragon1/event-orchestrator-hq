@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Hotel, Plane, Bus, Car, CheckCircle, XCircle, AlertCircle, Train } from "lucide-react";
+import { Hotel, Plane, Bus, Car, CheckCircle, XCircle, AlertCircle, Train, Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -714,40 +714,20 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
+            <TableHead className="w-[250px]">Participant</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Event Role</TableHead>
-            <TableHead className="text-center">
-              <div className="flex items-center justify-center">
-                <Hotel className="h-4 w-4 mr-1" /> Hotel
-              </div>
-            </TableHead>
-            <TableHead className="text-center">
-              <div className="flex items-center justify-center">
-                <Plane className="h-4 w-4 mr-1" />
-                <Train className="h-4 w-4 mr-1" /> Travel
-              </div>
-            </TableHead>
-            <TableHead className="text-center">
-              <div className="flex items-center justify-center">
-                <Bus className="h-4 w-4 mr-1" /> Buses
-              </div>
-            </TableHead>
-            <TableHead className="text-center">
-              <div className="flex items-center justify-center">
-                <Car className="h-4 w-4 mr-1" /> Cars
-              </div>
-            </TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead className="text-center">Accommodations</TableHead>
+            <TableHead className="text-center">Transportation</TableHead>
+            <TableHead className="text-center">Bus</TableHead>
+            <TableHead className="text-center">Car</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {participants.map((participant) => (
             <TableRow key={participant.id}>
               <TableCell className="font-medium">{participant.name}</TableCell>
-              <TableCell>{participant.email}</TableCell>
-              <TableCell>{participant.role || '-'}</TableCell>
               <TableCell>
                 <Badge 
                   variant={getStatusBadgeVariant(participant.invite_status)}
@@ -779,6 +759,28 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
               </TableCell>
               <TableCell className="text-center">
                 {renderCarReservations(participant.carReservations)}
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end space-x-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                        >
+                          <Link to={`/persons/details/${participant.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View Itinerary</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </TableCell>
             </TableRow>
           ))}

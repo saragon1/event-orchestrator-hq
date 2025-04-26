@@ -506,6 +506,33 @@ export type Database = {
           },
         ]
       }
+      geocoding_cache: {
+        Row: {
+          address: string
+          created_at: string | null
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hotel_reservations: {
         Row: {
           check_in: string
