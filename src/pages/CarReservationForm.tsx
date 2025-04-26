@@ -119,7 +119,7 @@ const CarReservationForm = () => {
         const { data, error } = await supabase
           .from("cars")
           .select(`
-            id, type, company, driver_name, departure_location, arrival_location, 
+            id, car_type, company, driver_name, departure_location, arrival_location, 
             departure_time, arrival_time, capacity, license_plate, event_id,
             car_reservations:car_reservations(id)
           `)
@@ -267,7 +267,7 @@ const CarReservationForm = () => {
   };
 
   const formatCarOption = (car: Car) => {
-    return `${car.type.toUpperCase()} - ${car.departure_location} to ${car.arrival_location} (${format(new Date(car.departure_time), "dd/MM/yyyy HH:mm")})`;
+    return `${car.car_type.toUpperCase()} - ${car.departure_location} to ${car.arrival_location} (${format(new Date(car.departure_time), "dd/MM/yyyy HH:mm")})`;
   };
 
   return (
@@ -384,7 +384,7 @@ const CarReservationForm = () => {
                   <h3 className="font-medium mb-2">Car Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p><strong>Car Type:</strong> {selectedCar.type}</p>
+                      <p><strong>Car Type:</strong> {selectedCar.car_type}</p>
                       <p><strong>Company:</strong> {selectedCar.company || "-"}</p>
                       <p><strong>Driver:</strong> {selectedCar.driver_name}</p>
                       <p><strong>License Plate:</strong> {selectedCar.license_plate || "-"}</p>

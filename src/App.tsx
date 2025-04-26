@@ -21,6 +21,9 @@ import HotelReservations from "./pages/HotelReservations";
 import Cars from "./pages/Cars";
 import CarForm from "./pages/CarForm";
 import CarDetails from "./pages/CarDetails";
+import Trains from "./pages/Trains";
+import TrainForm from "./pages/TrainForm";
+import TrainDetails from "./pages/TrainDetails";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +58,10 @@ const App = () => (
           <Route path="/cars/new" element={<CarForm />} />
           <Route path="/cars/:id" element={<CarForm />} />
           <Route path="/cars/details/:id" element={<CarDetails />} />
+          <Route path="/trains" element={<Trains />} />
+          <Route path="/trains/new" element={<TrainForm />} />
+          <Route path="/trains/:id" element={<TrainForm />} />
+          <Route path="/trains/details/:id" element={<TrainDetails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

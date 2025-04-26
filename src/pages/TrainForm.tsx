@@ -12,13 +12,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -27,21 +20,31 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEventStore } from "@/stores/event-store";
 
 const formSchema = z.object({
-  car_type: z.enum(["private", "ncc", "taxi"]).refine((val) => val !== undefined, "Car type is required"),
-  company: z.string().optional(),
-  driverName: z.string().min(1, "Driver name is required"),
-  driverPhone: z.string().min(1, "Driver phone is required"),
-  licensePlate: z.string().min(1, "License plate is required"),
-  departureLocation: z.string().min(1, "Pickup location is required"),
-  arrivalLocation: z.string().min(1, "Dropoff location is required"),
-  departureTime: z.string().min(1, "Pickup time is required"),
-  arrivalTime: z.string().min(1, "Dropoff time is required"),
+  company: z.string().min(1, "Company is required"),
+  trainNumber: z.string().min(1, "Train number is required"),
+  departureStation: z.string().min(1, "Departure station is required"),
+  arrivalStation: z.string().min(1, "Arrival station is required"),
+  departureTime: z.string().min(1, "Departure time is required"),
+  arrivalTime: z.string().min(1, "Arrival time is required"),
   capacity: z.string().min(1, "Capacity is required"),
+  notes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const CarForm = () => {
+interface Train {
+  id: string;
+  company: string;
+  train_number: string;
+  departure_station: string;
+  arrival_station: string;
+  departure_time: string;
+  arrival_time: string;
+  capacity: number;
+  notes: string | null;
+}
+
+const TrainForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -51,27 +54,25 @@ const CarForm = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      car_type: "private",
       company: "",
-      driverName: "",
-      driverPhone: "",
-      licensePlate: "",
-      departureLocation: "",
-      arrivalLocation: "",
+      trainNumber: "",
+      departureStation: "",
+      arrivalStation: "",
       departureTime: "",
       arrivalTime: "",
-      capacity: "4",
+      capacity: "0",
+      notes: "",
     },
   });
 
   useEffect(() => {
-    const fetchCar = async () => {
+    const fetchTrain = async () => {
       if (!id) return;
       
       setIsLoading(true);
       try {
         const { data, error } = await supabase
-          .from("cars")
+          .from("trains")
           .select("*")
           .eq("id", id)
           .single();
@@ -80,23 +81,21 @@ const CarForm = () => {
 
         if (data) {
           form.reset({
-            car_type: data.car_type,
-            company: data.company || "",
-            driverName: data.driver_name,
-            driverPhone: data.driver_phone,
-            licensePlate: data.license_plate,
-            departureLocation: data.departure_location,
-            arrivalLocation: data.arrival_location,
+            company: data.company,
+            trainNumber: data.train_number,
+            departureStation: data.departure_station,
+            arrivalStation: data.arrival_station,
             departureTime: new Date(data.departure_time).toISOString().slice(0, 16),
-            arrivalTime: new Date(data.departure_time).toISOString().slice(0, 16),
+            arrivalTime: new Date(data.arrival_time).toISOString().slice(0, 16),
             capacity: data.capacity.toString(),
+            notes: data.notes || "",
           });
         }
       } catch (error) {
-        console.error("Error fetching car:", error);
+        console.error("Error fetching train:", error);
         toast({
           title: "Error",
-          description: "Could not fetch car details",
+          description: "Could not fetch train details",
           variant: "destructive",
         });
       } finally {
@@ -104,7 +103,7 @@ const CarForm = () => {
       }
     };
 
-    fetchCar();
+    fetchTrain();
   }, [id, form, toast]);
 
   const onSubmit = async (values: FormValues) => {
@@ -120,47 +119,45 @@ const CarForm = () => {
     setIsLoading(true);
 
     try {
-      const carData = {
-        car_type: values.car_type,
+      const trainData = {
         company: values.company,
-        driver_name: values.driverName,
-        driver_phone: values.driverPhone,
-        license_plate: values.licensePlate,
-        departure_location: values.departureLocation,
-        arrival_location: values.arrivalLocation,
+        train_number: values.trainNumber,
+        departure_station: values.departureStation,
+        arrival_station: values.arrivalStation,
         departure_time: values.departureTime,
         arrival_time: values.arrivalTime,
         capacity: parseInt(values.capacity),
+        notes: values.notes || null,
         event_id: selectedEventId,
       };
 
       let response;
       if (id) {
         response = await supabase
-          .from("cars")
-          .update(carData)
+          .from("trains")
+          .update(trainData)
           .eq("id", id);
       } else {
         response = await supabase
-          .from("cars")
-          .insert(carData);
+          .from("trains")
+          .insert(trainData);
       }
 
       if (response.error) throw response.error;
 
       toast({
-        title: id ? "Car updated" : "Car created",
+        title: id ? "Train updated" : "Train created",
         description: id
-          ? "Car has been successfully updated"
-          : "New car has been successfully created",
+          ? "Train has been successfully updated"
+          : "New train has been successfully created",
       });
 
-      navigate("/cars");
+      navigate("/trains");
     } catch (error) {
-      console.error("Error saving car:", error);
+      console.error("Error saving train:", error);
       toast({
         title: "Error",
-        description: `Could not ${id ? "update" : "create"} car`,
+        description: `Could not ${id ? "update" : "create"} train`,
         variant: "destructive",
       });
     } finally {
@@ -169,7 +166,7 @@ const CarForm = () => {
   };
 
   return (
-    <DashboardLayout title={id ? "Edit Car" : "Create Car"}>
+    <DashboardLayout title={id ? "Edit Train" : "Create Train"}>
       <Card>
         <CardContent className="pt-6">
           <Form {...form}>
@@ -177,39 +174,26 @@ const CarForm = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="car_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Car Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoading}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select car type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="private">Private</SelectItem>
-                          <SelectItem value="ncc">NCC</SelectItem>
-                          <SelectItem value="taxi">Taxi</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="company"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company (Optional)</FormLabel>
+                      <FormLabel>Company</FormLabel>
                       <FormControl>
-                        <Input placeholder="Company name" {...field} disabled={isLoading} />
+                        <Input placeholder="Amtrak" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="trainNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Train Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -220,12 +204,12 @@ const CarForm = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="driverName"
+                  name="departureStation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driver Name</FormLabel>
+                      <FormLabel>Departure Station</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} disabled={isLoading} />
+                        <Input placeholder="New York" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -234,78 +218,12 @@ const CarForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="driverPhone"
+                  name="arrivalStation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driver Phone</FormLabel>
+                      <FormLabel>Arrival Station</FormLabel>
                       <FormControl>
-                        <Input placeholder="123-456-7890" {...field} disabled={isLoading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="licensePlate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>License Plate</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ABC123" {...field} disabled={isLoading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="capacity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Capacity</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="4"
-                          {...field}
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="departureLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pickup Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Airport" {...field} disabled={isLoading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="arrivalLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dropoff Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Hotel" {...field} disabled={isLoading} />
+                        <Input placeholder="Boston" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -319,7 +237,7 @@ const CarForm = () => {
                   name="departureTime"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Pickup Time</FormLabel>
+                      <FormLabel>Departure Time</FormLabel>
                       <FormControl>
                         <Input type="datetime-local" {...field} disabled={isLoading} />
                       </FormControl>
@@ -333,9 +251,45 @@ const CarForm = () => {
                   name="arrivalTime"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Dropoff Time</FormLabel>
+                      <FormLabel>Arrival Time</FormLabel>
                       <FormControl>
                         <Input type="datetime-local" {...field} disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="100"
+                          {...field}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Additional information" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -347,13 +301,13 @@ const CarForm = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/cars")}
+                  onClick={() => navigate("/trains")}
                   disabled={isLoading}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : id ? "Update Car" : "Create Car"}
+                  {isLoading ? "Saving..." : id ? "Update Train" : "Create Train"}
                 </Button>
               </div>
             </form>
@@ -364,4 +318,4 @@ const CarForm = () => {
   );
 };
 
-export default CarForm; 
+export default TrainForm; 

@@ -64,120 +64,6 @@ export type Database = {
           },
         ]
       }
-      cars: {
-        Row: {
-          id: string
-          event_id: string
-          type: "private" | "ncc" | "taxi"
-          company: string
-          driver_name: string
-          driver_phone: string
-          departure_location: string
-          arrival_location: string
-          departure_time: string
-          arrival_time: string
-          capacity: number
-          license_plate: string
-          notes: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          event_id: string
-          company: string
-          driver_name: string
-          driver_phone: string
-          departure_location: string
-          arrival_location: string
-          departure_time: string
-          arrival_time: string
-          capacity: number
-          license_plate: string
-          notes?: string | null
-          created_at?: string | null
-          type: "private" | "ncc" | "taxi"
-        }
-        Update: {
-          id?: string
-          event_id?: string
-          company?: string
-          driver_name?: string
-          driver_phone?: string
-          departure_location?: string
-          arrival_location?: string
-          departure_time?: string
-          arrival_time?: string
-          capacity?: number
-          license_plate?: string
-          notes?: string | null
-          created_at?: string | null
-          type?: "private" | "ncc" | "taxi"
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cars_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      car_reservations: {
-        Row: {
-          id: string
-          event_id: string
-          car_id: string
-          person_id: string
-          confirmation_number: string | null
-          is_driver: boolean
-          notes: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          event_id: string
-          car_id: string
-          person_id: string
-          confirmation_number?: string | null
-          is_driver: boolean
-          notes?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          event_id?: string
-          car_id?: string
-          person_id?: string
-          confirmation_number?: string | null
-          is_driver?: boolean
-          notes?: string | null
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "car_reservations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "car_reservations_car_id_fkey"
-            columns: ["car_id"]
-            isOneToOne: false
-            referencedRelation: "cars"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "car_reservations_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "persons"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       buses: {
         Row: {
           arrival_location: string
@@ -215,6 +101,123 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "buses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_reservations: {
+        Row: {
+          car_id: string
+          confirmation_number: string | null
+          created_at: string | null
+          event_id: string
+          id: string
+          is_driver: boolean | null
+          notes: string | null
+          person_id: string
+        }
+        Insert: {
+          car_id: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          is_driver?: boolean | null
+          notes?: string | null
+          person_id: string
+        }
+        Update: {
+          car_id?: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          is_driver?: boolean | null
+          notes?: string | null
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_reservations_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_reservations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_reservations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cars: {
+        Row: {
+          arrival_location: string | null
+          arrival_time: string | null
+          capacity: number | null
+          car_type: string
+          company: string | null
+          created_at: string | null
+          departure_location: string | null
+          departure_time: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          event_id: string
+          id: string
+          license_plate: string | null
+          notes: string | null
+          type: Database["public"]["Enums"]["car_type"] | null
+        }
+        Insert: {
+          arrival_location?: string | null
+          arrival_time?: string | null
+          capacity?: number | null
+          car_type: string
+          company?: string | null
+          created_at?: string | null
+          departure_location?: string | null
+          departure_time?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          event_id: string
+          id?: string
+          license_plate?: string | null
+          notes?: string | null
+          type?: Database["public"]["Enums"]["car_type"] | null
+        }
+        Update: {
+          arrival_location?: string | null
+          arrival_time?: string | null
+          capacity?: number | null
+          car_type?: string
+          company?: string | null
+          created_at?: string | null
+          departure_location?: string | null
+          departure_time?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          event_id?: string
+          id?: string
+          license_plate?: string | null
+          notes?: string | null
+          type?: Database["public"]["Enums"]["car_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cars_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
@@ -262,22 +265,25 @@ export type Database = {
         Row: {
           created_at: string | null
           event_id: string
-          invite_status: "waiting_invite" | "invited" | "confirmed" | "declined"
+          event_role: Database["public"]["Enums"]["event_role"] | null
           id: string
+          invite_status: Database["public"]["Enums"]["invite_status"] | null
           person_id: string
         }
         Insert: {
           created_at?: string | null
           event_id: string
-          invite_status?: "waiting_invite" | "invited" | "confirmed" | "declined"
+          event_role?: Database["public"]["Enums"]["event_role"] | null
           id?: string
+          invite_status?: Database["public"]["Enums"]["invite_status"] | null
           person_id: string
         }
         Update: {
           created_at?: string | null
           event_id?: string
-          invite_status?: "waiting_invite" | "invited" | "confirmed" | "declined"
+          event_role?: Database["public"]["Enums"]["event_role"] | null
           id?: string
+          invite_status?: Database["public"]["Enums"]["invite_status"] | null
           person_id?: string
         }
         Relationships: [
@@ -550,6 +556,111 @@ export type Database = {
         }
         Relationships: []
       }
+      train_tickets: {
+        Row: {
+          confirmation_number: string | null
+          created_at: string | null
+          event_id: string
+          id: string
+          notes: string | null
+          person_id: string
+          seat: string | null
+          train_id: string
+        }
+        Insert: {
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          notes?: string | null
+          person_id: string
+          seat?: string | null
+          train_id: string
+        }
+        Update: {
+          confirmation_number?: string | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          notes?: string | null
+          person_id?: string
+          seat?: string | null
+          train_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "train_tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "train_tickets_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "train_tickets_train_id_fkey"
+            columns: ["train_id"]
+            isOneToOne: false
+            referencedRelation: "trains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trains: {
+        Row: {
+          arrival_station: string
+          arrival_time: string
+          capacity: number
+          company: string
+          created_at: string | null
+          departure_station: string
+          departure_time: string
+          event_id: string
+          id: string
+          notes: string | null
+          train_number: string
+        }
+        Insert: {
+          arrival_station: string
+          arrival_time: string
+          capacity?: number
+          company: string
+          created_at?: string | null
+          departure_station: string
+          departure_time: string
+          event_id: string
+          id?: string
+          notes?: string | null
+          train_number: string
+        }
+        Update: {
+          arrival_station?: string
+          arrival_time?: string
+          capacity?: number
+          company?: string
+          created_at?: string | null
+          departure_station?: string
+          departure_time?: string
+          event_id?: string
+          id?: string
+          notes?: string | null
+          train_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trains_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -559,6 +670,7 @@ export type Database = {
     }
     Enums: {
       car_type: "private" | "ncc" | "taxi"
+      event_role: "vip" | "attendee" | "speaker" | "staff" | "other"
       invite_status: "waiting_invite" | "invited" | "confirmed" | "declined"
     }
     CompositeTypes: {
@@ -675,13 +787,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      type: [
-        "sedan",
-        "suv",
-        "van",
-        "bus",
-        "limousine"
-      ]
+      car_type: ["private", "ncc", "taxi"],
+      event_role: ["vip", "attendee", "speaker", "staff", "other"],
+      invite_status: ["waiting_invite", "invited", "confirmed", "declined"],
     },
   },
 } as const

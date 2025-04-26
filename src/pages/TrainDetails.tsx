@@ -3,7 +3,7 @@ import { useParams, useLocation } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Car, Plus, Pencil, Trash2 } from "lucide-react";
+import { Train, Plus, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,54 +18,49 @@ import { useEventStore } from "@/stores/event-store";
 import { TicketFormModal } from "@/components/tickets/TicketFormModal";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
-import { Database } from "@/integrations/supabase/types";
 
-type Car = Database["public"]["Tables"]["cars"]["Row"];
-
-interface CarReservation {
+interface TrainData {
   id: string;
-  person: { name: string };
-  confirmation_number: string | null;
+  company: string;
+  train_number: string;
+  departure_station: string;
+  arrival_station: string;
+  departure_time: string;
+  arrival_time: string;
+  capacity: number;
   notes: string | null;
 }
 
-const getCarTypeLabel = (type: string) => {
-  switch (type) {
-    case 'private':
-      return { label: 'Private', variant: 'default' as const };
-    case 'ncc':
-      return { label: 'NCC', variant: 'outline' as const };
-    case 'taxi':
-      return { label: 'Taxi', variant: 'secondary' as const };
-    default:
-      return { label: type, variant: 'outline' as const };
-  }
-};
+interface TrainTicket {
+  id: string;
+  person: { name: string };
+  confirmation_number: string | null;
+  seat: string | null;
+  notes: string | null;
+}
 
-export default function CarDetails() {
+export default function TrainDetails() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { toast } = useToast();
-  const [car, setCar] = useState<Car | null>(null);
-  const [reservations, setReservations] = useState<CarReservation[]>([]);
+  const [train, setTrain] = useState<TrainData | null>(null);
+  const [tickets, setTickets] = useState<TrainTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedReservationId, setSelectedReservationId] = useState<string | undefined>();
+  const [selectedTicketId, setSelectedTicketId] = useState<string | undefined>();
   const selectedEventId = useEventStore((state) => state.selectedEventId);
   
-  // Extract reservation ID from query parameter
-  const highlightedReservationId = new URLSearchParams(location.search).get('reservation');
+  // Extract ticket ID from query parameter
+  const highlightedTicketId = new URLSearchParams(location.search).get('ticket');
 
   // Reference for the highlighted row
   const highlightedRowRef = React.useRef<HTMLTableRowElement>(null);
 
-  const fetchCar = async () => {
+  const fetchTrain = async () => {
     if (!id || !selectedEventId) return;
 
     const { data, error } = await supabase
-      .from('cars')
+      .from('trains')
       .select('*')
       .eq('id', id)
       .eq('event_id', selectedEventId)
@@ -74,177 +69,172 @@ export default function CarDetails() {
     if (error) {
       toast({
         title: "Error",
-        description: "Could not fetch car details",
+        description: "Could not fetch train details",
         variant: "destructive",
       });
       return;
     }
 
-    setCar(data);
+    setTrain(data);
   };
 
-  const fetchReservations = async () => {
+  const fetchTickets = async () => {
     if (!id || !selectedEventId) return;
 
     const { data, error } = await supabase
-      .from('car_reservations')
+      .from('train_tickets')
       .select(`
         id,
+        seat,
         confirmation_number,
         notes,
         person:persons(name)
       `)
-      .eq('car_id', id)
+      .eq('train_id', id)
       .eq('event_id', selectedEventId);
 
     if (error) {
       toast({
         title: "Error",
-        description: "Could not fetch reservations",
+        description: "Could not fetch tickets",
         variant: "destructive",
       });
       return;
     }
 
-    setReservations(data || []);
+    setTickets(data || []);
     setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchCar();
-    fetchReservations();
+    fetchTrain();
+    fetchTickets();
   }, [id, selectedEventId]);
 
-  // Scroll to highlighted reservation when the component loads or reservations change
+  // Scroll to highlighted ticket when the component loads or tickets change
   useEffect(() => {
-    if (highlightedReservationId && !isLoading && highlightedRowRef.current) {
+    if (highlightedTicketId && !isLoading && highlightedRowRef.current) {
       // Scroll the highlighted row into view with a smooth animation
       highlightedRowRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'center'
       });
     }
-  }, [highlightedReservationId, reservations, isLoading]);
+  }, [highlightedTicketId, tickets, isLoading]);
 
-  const handleDelete = async (reservationId: string) => {
+  const handleDelete = async (ticketId: string) => {
     try {
       const { error } = await supabase
-        .from('car_reservations')
+        .from('train_tickets')
         .delete()
-        .eq('id', reservationId);
+        .eq('id', ticketId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Reservation deleted successfully",
+        description: "Ticket deleted successfully",
       });
 
-      fetchReservations();
+      fetchTickets();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Could not delete reservation",
+        description: "Could not delete ticket",
         variant: "destructive",
       });
     }
   };
 
-  const handleOpenModal = (reservationId?: string) => {
-    setSelectedReservationId(reservationId);
+  const handleOpenModal = (ticketId?: string) => {
+    setSelectedTicketId(ticketId);
     setIsModalOpen(true);
   };
 
-  if (!car || !selectedEventId) {
+  if (!train || !selectedEventId) {
     return (
-      <DashboardLayout title="Car Details">
+      <DashboardLayout title="Train Details">
         <div className="p-4">Loading...</div>
       </DashboardLayout>
     );
   }
 
-  const { label, variant } = getCarTypeLabel(car.car_type);
-
   return (
-    <DashboardLayout title="Car Details">
+    <DashboardLayout title="Train Details">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Car className="h-5 w-5" />
-            Car Details
+            <Train className="h-5 w-5" />
+            Train Details
           </CardTitle>
           <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Add Reservation
+            Add Ticket
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <div>
-              <h3 className="font-semibold">Car Type</h3>
-              <Badge variant={variant}>{label}</Badge>
-            </div>
-            <div>
-              <h3 className="font-semibold">Company / Driver</h3>
-              <p>{car.company} / {car.driver_name}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold">Driver Phone</h3>
-              <p>{car.driver_phone || '-'}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold">License Plate</h3>
-              <p>{car.license_plate}</p>
-            </div>
-            <div>
-              <h3 className="font-semibold">Capacity</h3>
-              <p>{car.capacity} passengers</p>
+              <h3 className="font-semibold">Company</h3>
+              <p>{train.company} - {train.train_number}</p>
             </div>
             <div>
               <h3 className="font-semibold">Departure</h3>
-              <p>{car.departure_location} - {formatDate(car.departure_time)}</p>
+              <p>{train.departure_station} - {new Date(train.departure_time).toLocaleString()}</p>
             </div>
             <div>
               <h3 className="font-semibold">Arrival</h3>
-              <p>{car.arrival_location} - {formatDate(car.departure_time)}</p>
+              <p>{train.arrival_station} - {new Date(train.arrival_time).toLocaleString()}</p>
             </div>
+            <div>
+              <h3 className="font-semibold">Capacity</h3>
+              <p>{train.capacity} passengers</p>
+            </div>
+            {train.notes && (
+              <div className="col-span-full">
+                <h3 className="font-semibold">Notes</h3>
+                <p>{train.notes}</p>
+              </div>
+            )}
           </div>
 
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Passenger</TableHead>
-                <TableHead>Confirmation</TableHead>
+                <TableHead>Seat</TableHead>
+                <TableHead>Confirmation #</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reservations.map((reservation) => (
+              {tickets.map((ticket) => (
                 <TableRow 
-                  key={reservation.id}
-                  ref={reservation.id === highlightedReservationId ? highlightedRowRef : undefined}
+                  key={ticket.id}
+                  ref={ticket.id === highlightedTicketId ? highlightedRowRef : undefined}
                   className={cn({
-                    'bg-blue-100 dark:bg-blue-950/30 border-l-4 border-l-blue-500': reservation.id === highlightedReservationId,
-                    'hover:bg-muted/50': reservation.id !== highlightedReservationId
+                    'bg-blue-100 dark:bg-blue-950/30 border-l-4 border-l-blue-500': ticket.id === highlightedTicketId,
+                    'hover:bg-muted/50': ticket.id !== highlightedTicketId
                   })}
                 >
-                  <TableCell>{reservation.person?.name}</TableCell>
-                  <TableCell>{reservation.confirmation_number || '-'}</TableCell>
-                  <TableCell>{reservation.notes || '-'}</TableCell>
+                  <TableCell>{ticket.person?.name}</TableCell>
+                  <TableCell>{ticket.seat || '-'}</TableCell>
+                  <TableCell>{ticket.confirmation_number || '-'}</TableCell>
+                  <TableCell>{ticket.notes || '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleOpenModal(reservation.id)}
+                        onClick={() => handleOpenModal(ticket.id)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleDelete(reservation.id)}
+                        onClick={() => handleDelete(ticket.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -262,13 +252,13 @@ export default function CarDetails() {
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
-            setSelectedReservationId(undefined);
+            setSelectedTicketId(undefined);
           }}
-          type="car"
+          type="train"
           eventId={selectedEventId}
           transportId={id!}
-          ticketId={selectedReservationId}
-          onSuccess={fetchReservations}
+          ticketId={selectedTicketId}
+          onSuccess={fetchTickets}
         />
       )}
     </DashboardLayout>

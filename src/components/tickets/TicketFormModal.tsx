@@ -17,7 +17,7 @@ interface Person {
 interface TicketFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'flight' | 'bus' | 'car';
+  type: 'flight' | 'bus' | 'car' | 'train';
   eventId: string;
   transportId: string;
   ticketId?: string;
@@ -75,7 +75,12 @@ export function TicketFormModal({
     const fetchTicket = async () => {
       if (!ticketId) return;
       
-      const table = type === 'flight' ? 'flight_tickets' : type === 'bus' ? 'bus_tickets' : 'car_reservations';
+      const table = 
+        type === 'flight' ? 'flight_tickets' : 
+        type === 'bus' ? 'bus_tickets' : 
+        type === 'train' ? 'train_tickets' :
+        'car_reservations';
+        
       const { data, error } = await supabase
         .from(table)
         .select('*')
@@ -92,9 +97,10 @@ export function TicketFormModal({
       }
 
       if (data) {
+        // For car reservations, there's no seat field
         form.reset({
           person_id: data.person_id,
-          seat: data.seat || "",
+          seat: type !== 'car' ? (data.seat || "") : "",
           confirmation_number: data.confirmation_number || "",
           notes: data.notes || "",
         });
@@ -109,21 +115,21 @@ export function TicketFormModal({
     setIsLoading(true);
     
     try {
-      const table = type === 'flight' 
-        ? 'flight_tickets' 
-        : type === 'bus'
-          ? 'bus_tickets'
-          : 'car_reservations';
+      const table = 
+        type === 'flight' ? 'flight_tickets' : 
+        type === 'bus' ? 'bus_tickets' : 
+        type === 'train' ? 'train_tickets' :
+        'car_reservations';
       
       // Create the data object with the common fields
-      const data: any = {
+      const data: Record<string, unknown> = {
         person_id: values.person_id,
         event_id: eventId,
         confirmation_number: values.confirmation_number,
         notes: values.notes
       };
 
-      // Add seat field only for flight and bus tickets
+      // Add seat field only for flight, bus, and train tickets
       if (type !== 'car') {
         data.seat = values.seat;
       }
@@ -133,15 +139,18 @@ export function TicketFormModal({
         data.flight_id = transportId;
       } else if (type === 'bus') {
         data.bus_id = transportId;
+      } else if (type === 'train') {
+        data.train_id = transportId;
       } else {
         data.car_id = transportId;
       }
       
+      let response;
       if (ticketId) {
         // Update existing ticket
         const { error } = await supabase
           .from(table)
-          .update(data)
+          .update(data as any)
           .eq('id', ticketId);
           
         if (error) throw error;
@@ -154,7 +163,7 @@ export function TicketFormModal({
         // Create new ticket
         const { error } = await supabase
           .from(table)
-          .insert(data);
+          .insert(data as any);
           
         if (error) throw error;
         
@@ -181,13 +190,14 @@ export function TicketFormModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{ticketId ? "Edit" : "Add"} {
-            type === 'flight' 
-              ? "Flight" 
-              : type === 'bus' 
-                ? "Bus" 
-                : "Car"
-          } Ticket</DialogTitle>
+          <DialogTitle>
+            {ticketId ? "Edit" : "Add"} {
+              type === 'flight' ? "Flight" : 
+              type === 'bus' ? "Bus" : 
+              type === 'car' ? "Car" : 
+              "Train"
+            } Ticket
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">

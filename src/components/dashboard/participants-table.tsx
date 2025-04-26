@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Hotel, Plane, Bus, Car, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Hotel, Plane, Bus, Car, CheckCircle, XCircle, AlertCircle, Train } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -50,6 +50,13 @@ interface FlightTicket {
   seat?: string;
 }
 
+interface TrainTicket {
+  id: string;
+  train_id: string;
+  person_id: string;
+  seat?: string;
+}
+
 interface BusTicket {
   id: string;
   bus_id: string;
@@ -70,6 +77,7 @@ interface ParticipantsTableProps {
 interface ParticipantWithStatus extends Person {
   hasHotel: boolean;
   flightTickets: FlightTicket[];
+  trainTickets: TrainTicket[];
   busTickets: BusTicket[];
   carReservations: CarReservation[];
   hotelReservationId?: string | null;
@@ -221,6 +229,14 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
           .eq('event_id', selectedEventId);
 
         if (flightTicketsError) throw flightTicketsError;
+        
+        // 4.1 Fetch train tickets
+        const { data: trainTickets, error: trainTicketsError } = await supabase
+          .from('train_tickets')
+          .select('id, train_id, person_id, seat')
+          .eq('event_id', selectedEventId);
+
+        if (trainTicketsError) throw trainTicketsError;
 
         // 5. Fetch bus tickets with complete details
         const { data: busTickets, error: busTicketsError } = await supabase
@@ -244,6 +260,13 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
           const personTickets = flightTicketsByPerson.get(ticket.person_id) || [];
           personTickets.push(ticket);
           flightTicketsByPerson.set(ticket.person_id, personTickets);
+        });
+        
+        const trainTicketsByPerson = new Map<string, TrainTicket[]>();
+        trainTickets?.forEach(ticket => {
+          const personTickets = trainTicketsByPerson.get(ticket.person_id) || [];
+          personTickets.push(ticket);
+          trainTicketsByPerson.set(ticket.person_id, personTickets);
         });
         
         const busTicketsByPerson = new Map<string, BusTicket[]>();
@@ -276,6 +299,7 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
           hasHotel: personsWithHotelReservations.has(person.id),
           hotelReservationId: hotelReservationByPerson.get(person.id) || null,
           flightTickets: flightTicketsByPerson.get(person.id) || [],
+          trainTickets: trainTicketsByPerson.get(person.id) || [],
           busTickets: busTicketsByPerson.get(person.id) || [],
           carReservations: carReservationsByPerson.get(person.id) || [],
           invite_status: person.invite_status,
@@ -353,22 +377,11 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
   // Render flight ticket icons
   const renderFlightTickets = (tickets: FlightTicket[]) => {
     if (tickets.length === 0) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <XCircle className="h-4 w-4 text-red-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>No flight tickets assigned</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+      return null;
     }
 
     return (
-      <div className="flex items-center justify-center gap-1">
+      <>
         {tickets.map((ticket, index) => (
           <TooltipProvider key={ticket.id}>
             <Tooltip>
@@ -389,6 +402,66 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
             </Tooltip>
           </TooltipProvider>
         ))}
+      </>
+    );
+  };
+
+  // Render train ticket icons
+  const renderTrainTickets = (tickets: TrainTicket[]) => {
+    if (tickets.length === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        {tickets.map((ticket, index) => (
+          <TooltipProvider key={ticket.id}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to={`/trains/details/${ticket.train_id}?ticket=${ticket.id}`}>
+                  <Train 
+                    className={`h-4 w-4 cursor-pointer hover:text-blue-700 ${
+                      tickets.length === 1 ? "text-yellow-500" : "text-blue-600"
+                    }`} 
+                  />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Train ticket {ticket.seat ? `- Seat: ${ticket.seat}` : ''}</p>
+                <p className="text-xs">{tickets.length === 1 ? "Warning: Only one train ticket" : ""}</p>
+                <p className="text-xs">Click to view details</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ))}
+      </>
+    );
+  };
+  
+  // Render combined travel tickets (flights + trains)
+  const renderTravelTickets = (participant: ParticipantWithStatus) => {
+    const hasFlightTickets = participant.flightTickets.length > 0;
+    const hasTrainTickets = participant.trainTickets.length > 0;
+    
+    if (!hasFlightTickets && !hasTrainTickets) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <XCircle className="h-4 w-4 text-red-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>No travel tickets assigned</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-center gap-1">
+        {hasFlightTickets && renderFlightTickets(participant.flightTickets)}
+        {hasTrainTickets && renderTrainTickets(participant.trainTickets)}
       </div>
     );
   };
@@ -653,7 +726,8 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
             </TableHead>
             <TableHead className="text-center">
               <div className="flex items-center justify-center">
-                <Plane className="h-4 w-4 mr-1" /> Flights
+                <Plane className="h-4 w-4 mr-1" />
+                <Train className="h-4 w-4 mr-1" /> Travel
               </div>
             </TableHead>
             <TableHead className="text-center">
@@ -698,7 +772,7 @@ export function ParticipantsTable({ selectedEventId }: ParticipantsTableProps) {
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                {renderFlightTickets(participant.flightTickets)}
+                {renderTravelTickets(participant)}
               </TableCell>
               <TableCell className="text-center">
                 {renderBusTickets(participant.busTickets)}
