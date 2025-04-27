@@ -12,23 +12,16 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  build-amd64:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Set up QEMU for multi-architecture builds
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'arm64,arm'
-
-      # Set up Docker Buildx for faster builds
+      # Set up Docker Buildx for amd64
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -39,13 +32,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Create a "latest" tag that's always updated
-      - name: Prepare tags
-        id: tags
-        run: |
-          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
       # Extract metadata (tags, labels) for Docker
       - name: Extract Docker metadata
@@ -63,18 +49,134 @@ jobs:
             type=sha
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
-      # Build and push Docker image for multiple architectures
-      - name: Build and push Docker image
+      # Build for AMD64
+      - name: Build and push Docker image for AMD64
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  build-arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up QEMU for ARM architecture
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: 'arm64'
+
+      # Set up Docker Buildx for arm64
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Log in to GitHub Container Registry
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata for ARM64
+      - name: Extract Docker metadata
+        id: meta-arm64
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-arm64
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      # Try to build for ARM64
+      - name: Build and push Docker image for ARM64
+        uses: docker/build-push-action@v4
+        continue-on-error: true
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: ${{ steps.meta-arm64.outputs.tags }}
+          labels: ${{ steps.meta-arm64.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-arm7:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up QEMU for ARM architecture
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: 'arm'
+
+      # Set up Docker Buildx for arm/v7
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Log in to GitHub Container Registry
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata for ARMv7
+      - name: Extract Docker metadata
+        id: meta-armv7
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-armv7
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      # Try to build for ARMv7
+      - name: Build and push Docker image for ARMv7
+        uses: docker/build-push-action@v4
+        continue-on-error: true
+        with:
+          context: .
+          push: true
+          platforms: linux/arm/v7
+          tags: ${{ steps.meta-armv7.outputs.tags }}
+          labels: ${{ steps.meta-armv7.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       # Output image URL for easy access
       - name: Image URL
-        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} for multiple architectures (amd64, arm64, armv7) with latest tag" 
+        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} with latest tag" 

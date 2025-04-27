@@ -10,8 +10,21 @@ RUN npm ci
 # Copy all files
 COPY . .
 
-# Build the app
-RUN npm run build
+# Detect architecture and build accordingly
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+      echo "Building on x86_64 architecture" && \
+      npm run build; \
+    elif [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then \
+      echo "Building on ARM64 architecture - using alternative build" && \
+      npm install -D @vitejs/plugin-react && \
+      mv vite.config.arm.ts vite.config.ts && \
+      npm run build; \
+    else \
+      echo "Building on ARM architecture - using alternative build" && \
+      npm install -D @vitejs/plugin-react && \
+      mv vite.config.arm.ts vite.config.ts && \
+      npm run build; \
+    fi
 
 # Create a custom env-config.js for container usage
 RUN echo 'window._env_ = {};' > ./dist/env-config.js
