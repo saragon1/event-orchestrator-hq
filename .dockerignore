@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+.github
+
+# Project dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build directory
+/dist
+/.cache
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Testing
+coverage
+.nyc_output
+
+# Log files
+*.log 
