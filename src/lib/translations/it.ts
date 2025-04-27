@@ -40,7 +40,11 @@ export const it = {
     company: "Compagnia",
     departure: "Partenza",
     arrival: "Arrivo",
-    capacity: "Capacità"
+    capacity: "Capacità",
+    profile: "Profilo",
+    myProfile: "Il Mio Profilo",
+    logout: "Disconnetti",
+    saveChanges: "Salva Modifiche",
   },
   dashboard: {
     title: "Dashboard",
@@ -129,5 +133,20 @@ export const it = {
     editTrain: "Modifica Treno",
     trainDetails: "Dettagli Treno",
     passengers: "Passeggeri"
+  },
+  profile: {
+    profileSettings: "Impostazioni Profilo",
+    manageProfile: "Gestisci le tue informazioni personali e le impostazioni dell'account",
+    name: "Nome",
+    email: "Email",
+    phone: "Telefono",
+    role: "Ruolo",
+    yourName: "Il tuo nome",
+    yourEmail: "La tua email",
+    yourPhone: "Il tuo numero di telefono",
+    mustBeLoggedIn: "Devi essere connesso per visualizzare il tuo profilo",
+    profileUpdated: "Profilo aggiornato",
+    profileUpdateSuccess: "Il tuo profilo è stato aggiornato con successo",
+    couldNotUpdateProfile: "Impossibile aggiornare il profilo"
   }
 }; 

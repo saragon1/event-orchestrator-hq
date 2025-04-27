@@ -42,6 +42,10 @@ export const en = {
     success: "Success",
     ticketDeletedSuccessfully: "Ticket deleted successfully",
     couldNotDeleteTicket: "Could not delete ticket",
+    profile: "Profile",
+    myProfile: "My Profile",
+    logout: "Logout",
+    saveChanges: "Save Changes",
   },
   dashboard: {
     title: "Dashboard",
@@ -103,7 +107,9 @@ export const en = {
     arrivalDate: "Arrival Date",
     createBus: "Create Bus",
     editBus: "Edit Bus",
-    busDetails: "Bus Details",
+    departure: "Departure",
+    arrival: "Arrival",
+    capacity: "Capacity",
     passengers: "Passengers"
   },
   cars: {
@@ -128,5 +134,20 @@ export const en = {
     editTrain: "Edit Train",
     trainDetails: "Train Details",
     passengers: "Passengers"
+  },
+  profile: {
+    profileSettings: "Profile Settings",
+    manageProfile: "Manage your personal information and account settings",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    role: "Role",
+    yourName: "Your name",
+    yourEmail: "Your email",
+    yourPhone: "Your phone number",
+    mustBeLoggedIn: "You must be logged in to view your profile",
+    profileUpdated: "Profile updated",
+    profileUpdateSuccess: "Your profile has been successfully updated",
+    couldNotUpdateProfile: "Could not update your profile"
   }
 }; 

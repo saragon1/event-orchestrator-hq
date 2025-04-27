@@ -1,4 +1,53 @@
-# Welcome to your Lovable project
+# Event Orchestrator HQ
+
+An application for orchestrating events and managing attendees, built with React, TypeScript, and Supabase.
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## GitHub Pages Deployment
+
+This project is configured to automatically deploy to GitHub Pages when changes are pushed to the main branch.
+
+### Setting up GitHub Pages
+
+1. Go to your GitHub repository settings
+2. Navigate to the "Pages" section
+3. Set the "Source" to "GitHub Actions"
+4. Push changes to the main branch to trigger deployment
+
+### Manual Deployment
+
+You can also manually trigger the deployment workflow:
+
+1. Go to the "Actions" tab in your GitHub repository
+2. Select the "Deploy to GitHub Pages" workflow
+3. Click "Run workflow"
+
+## Continuous Integration
+
+Pull requests to the main branch will automatically trigger a test workflow that:
+
+1. Checks for linting errors
+2. Performs TypeScript type checking
+3. Ensures the project builds successfully
+
+## Routing on GitHub Pages
+
+This project uses client-side routing, which is supported on GitHub Pages through a custom 404 page redirect. This allows deep linking and browser refreshes to work correctly.
 
 ## Project info
 

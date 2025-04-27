@@ -21,10 +21,13 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { Database } from "@/integrations/supabase/types";
+
+type Hotel = Database["public"]["Tables"]["hotels"]["Row"];
 
 const Hotels = () => {
   const navigate = useNavigate();
-  const [selectedHotel, setSelectedHotel] = useState<any>(null);
+  const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
 
   const { data: hotels, isLoading } = useQuery({
     queryKey: ['hotels'],
