@@ -106,12 +106,13 @@ jobs:
             type=sha
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
-      # Try to build for ARM64
+      # Try to build for ARM64 with simplified Dockerfile
       - name: Build and push Docker image for ARM64
         uses: docker/build-push-action@v4
         continue-on-error: true
         with:
           context: .
+          file: ./Dockerfile.simple
           push: true
           platforms: linux/arm64
           tags: ${{ steps.meta-arm64.outputs.tags }}
@@ -164,12 +165,13 @@ jobs:
             type=sha
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
-      # Try to build for ARMv7
+      # Try to build for ARMv7 with simplified Dockerfile
       - name: Build and push Docker image for ARMv7
         uses: docker/build-push-action@v4
         continue-on-error: true
         with:
           context: .
+          file: ./Dockerfile.simple
           push: true
           platforms: linux/arm/v7
           tags: ${{ steps.meta-armv7.outputs.tags }}
