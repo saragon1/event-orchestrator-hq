@@ -13,6 +13,9 @@ COPY . .
 # Build the app
 RUN npm run build
 
+# Create a custom env-config.js for container usage
+RUN echo 'window._env_ = {};' > ./dist/env-config.js
+
 # Production stage
 FROM nginx:alpine AS production
 
@@ -24,6 +27,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 WORKDIR /usr/share/nginx/html
 COPY env.sh .
 RUN chmod +x env.sh
+
+# Make sure the .js files have proper permissions
+RUN find /usr/share/nginx/html -type f -name "*.js" -exec chmod 644 {} \;
 
 # Start script that initializes environment variables and starts nginx
 CMD ["/bin/sh", "-c", "./env.sh && nginx -g \"daemon off;\""] 

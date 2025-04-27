@@ -40,6 +40,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Create a "latest" tag that's always updated
+      - name: Prepare tags
+        id: tags
+        run: |
+          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
       # Extract metadata (tags, labels) for Docker
       - name: Extract Docker metadata
         id: meta
@@ -54,6 +61,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
       # Build and push Docker image for multiple architectures
       - name: Build and push Docker image
@@ -69,4 +77,4 @@ jobs:
 
       # Output image URL for easy access
       - name: Image URL
-        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} for multiple architectures (amd64, arm64, armv7)" 
+        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} for multiple architectures (amd64, arm64, armv7) with latest tag" 
