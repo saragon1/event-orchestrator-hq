@@ -10,7 +10,8 @@ const queryClient = new QueryClient();
 
 // Determine if we're running in production (GitHub Pages)
 const isProduction = import.meta.env.MODE === 'production';
-const basename = isProduction ? '/event-orchestrator-hq' : '/';
+//const basename = isProduction ? '/event-orchestrator-hq' : '/';
+const basename = '/';
 
 // Router component that uses the route config
 function Router() {

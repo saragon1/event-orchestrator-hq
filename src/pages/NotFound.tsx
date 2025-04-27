@@ -4,8 +4,7 @@ import { useEffect } from "react";
 const NotFound = () => {
   const location = useLocation();
   const isProduction = import.meta.env.MODE === 'production';
-  const basePath = isProduction ? '/event-orchestrator-hq' : '';
-
+  
   useEffect(() => {
     console.error(
       "404 Error: User attempted to access non-existent route:",
