@@ -22,6 +22,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Set up QEMU for multi-architecture builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: 'arm64,arm'
+
       # Set up Docker Buildx for faster builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -49,12 +55,13 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
-      # Build and push Docker image
+      # Build and push Docker image for multiple architectures
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -62,4 +69,4 @@ jobs:
 
       # Output image URL for easy access
       - name: Image URL
-        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" 
+        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} for multiple architectures (amd64, arm64, armv7)" 

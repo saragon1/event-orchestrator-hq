@@ -43,13 +43,17 @@ This project includes Docker container support for easy deployment to any contai
 
 ### Using the Container
 
-The container is automatically built and published to GitHub Container Registry (GHCR) when code is pushed to the main branch.
+The container is automatically built and published to GitHub Container Registry (GHCR) when code is pushed to the main branch. The images are built for multiple architectures including:
+
+- **linux/amd64**: Standard x86_64 architecture (Intel/AMD)
+- **linux/arm64**: ARM 64-bit architecture (Apple Silicon M1/M2, AWS Graviton, etc.)
+- **linux/arm/v7**: ARM 32-bit architecture (Raspberry Pi, older ARM devices)
 
 ```bash
 # Pull the latest container
 docker pull ghcr.io/[owner]/event-orchestrator-hq:latest
 
-# Run the container
+# Run the container (Docker will automatically select the right architecture)
 docker run -p 8080:80 ghcr.io/[owner]/event-orchestrator-hq:latest
 ```
 
@@ -65,8 +69,11 @@ docker run -p 8080:80 -e VITE_API_URL=https://api.example.com ghcr.io/[owner]/ev
 ### Building Locally
 
 ```bash
-# Build the container
+# Build the container for your current architecture
 docker build -t event-orchestrator-hq .
+
+# Build for a specific platform
+docker buildx build --platform linux/arm64 -t event-orchestrator-hq:arm64 .
 
 # Run the container
 docker run -p 8080:80 event-orchestrator-hq
