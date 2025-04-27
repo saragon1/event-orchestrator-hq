@@ -30,6 +30,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Copy index.html to 404.html to handle client-side routing
+      - name: Configure SPA routing
+        run: |
+          cp dist/index.html dist/404.html
+          
+      # Make sure _redirects is included if it exists
+      - name: Check for _redirects
+        run: |
+          if [ -f "public/_redirects" ]; then
+            cp public/_redirects dist/
+          fi
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:

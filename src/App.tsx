@@ -8,6 +8,10 @@ import { routes } from "./routes";
 
 const queryClient = new QueryClient();
 
+// Determine if we're running in production (GitHub Pages)
+const isProduction = import.meta.env.MODE === 'production';
+const basename = isProduction ? '/event-orchestrator-hq' : '/';
+
 // Router component that uses the route config
 function Router() {
   return useRoutes(routes);
@@ -19,7 +23,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <Router />
         </BrowserRouter>
       </TooltipProvider>
