@@ -7,7 +7,12 @@ import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet-defaulticon-compatibility";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import L from "leaflet";
+import MarkerClusterGroup from "react-leaflet-markercluster";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
@@ -20,18 +25,80 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { geocodeAddress } from "@/lib/geocoding";
 
-// Fix Leaflet icon issue
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
+// Path colors
+const pathColors = {
+  hotel: "#3b82f6", // Blue
+  bus: "#10b981", // Green
+  car: "#f59e0b", // Amber
+  train: "#ef4444", // Red
+  flight: "#8b5cf6", // Purple
+  event: "#000000", // Black
+};
 
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+// Add custom CSS for marker clusters
+const clusterStyles = `
+  .custom-marker-cluster {
+    background: transparent;
+    border: none;
+  }
+  
+  .cluster-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+    box-shadow: 0 0 0 2px white, 0 0 10px rgba(0, 0, 0, 0.35);
+  }
+  
+  .bus-cluster {
+    background-color: ${pathColors.bus};
+  }
+  
+  .hotel-cluster {
+    background-color: ${pathColors.hotel};
+  }
+  
+  .car-cluster {
+    background-color: ${pathColors.car};
+  }
+  
+  .train-cluster {
+    background-color: ${pathColors.train};
+  }
+  
+  .flight-cluster {
+    background-color: ${pathColors.flight};
+  }
+`;
 
-L.Marker.prototype.options.icon = DefaultIcon;
+// Custom icons for different marker types
+const createCustomIcon = (iconPath: string, size: [number, number] = [32, 32], anchor: [number, number] = [16, 32]): L.Icon => {
+  return new L.Icon({
+    iconUrl: iconPath,
+    iconSize: size,
+    iconAnchor: anchor,
+    popupAnchor: [0, -32],
+  });
+};
+
+// Define icons for different elements
+const icons: Record<string, L.Icon> = {
+  event: createCustomIcon('/icons/event.svg'),
+  hotel: createCustomIcon('/icons/hotel.svg'),
+  busDeparture: createCustomIcon('/icons/bus.svg'),
+  busArrival: createCustomIcon('/icons/bus.svg'),
+  carDeparture: createCustomIcon('/icons/car.svg'),
+  carArrival: createCustomIcon('/icons/car.svg'),
+  trainDeparture: createCustomIcon('/icons/train.svg'),
+  trainArrival: createCustomIcon('/icons/train.svg'),
+  flightDeparture: createCustomIcon('/icons/flight.svg'),
+  flightArrival: createCustomIcon('/icons/flight.svg'),
+};
 
 // Create the MapUpdater component to update the map when props change
 function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
@@ -50,10 +117,16 @@ type CarReservation = Tables<"car_reservations"> & { person: Person };
 type TrainTicket = Tables<"train_tickets"> & { person: Person };
 type FlightTicket = Tables<"flight_tickets"> & { person: Person };
 
+// Add hotel reservation type
+type HotelReservation = Tables<"hotel_reservations"> & { person: Tables<"persons"> };
+
 type EventMapData = {
   event: Tables<"events"> | null;
   persons: Person[];
-  hotels: Array<Tables<"hotels"> & { position: [number, number] | null }>;
+  hotels: Array<Tables<"hotels"> & { 
+    position: [number, number] | null;
+    reservations?: HotelReservation[]; // Add reservations to hotels
+  }>;
   buses: Array<Tables<"buses"> & { 
     departurePosition: [number, number] | null;
     arrivalPosition: [number, number] | null;
@@ -113,6 +186,10 @@ const EventMap = () => {
     event: "#000000", // Black
   };
 
+  // Add state for selected hotel and loading hotel reservations
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
+  const [hotelReservationsLoading, setHotelReservationsLoading] = useState(false);
+  
   useEffect(() => {
     if (!selectedEventId) {
       setIsLoading(false);
@@ -367,6 +444,44 @@ const EventMap = () => {
     return mapData.event && center;
   };
   
+  // Function to fetch hotel reservations
+  const fetchHotelReservations = async (hotelId: string) => {
+    setHotelReservationsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("hotel_reservations")
+        .select(`
+          *,
+          person:person_id (*)
+        `)
+        .eq("hotel_id", hotelId)
+        .eq("event_id", selectedEventId);
+        
+      if (error) throw error;
+      
+      // Update the hotels array with the reservations
+      setMapData(prev => ({
+        ...prev,
+        hotels: prev.hotels.map(hotel => 
+          hotel.id === hotelId 
+            ? { ...hotel, reservations: data as HotelReservation[] } 
+            : hotel
+        )
+      }));
+      
+      setSelectedHotelId(hotelId);
+    } catch (error) {
+      console.error("Error fetching hotel reservations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load hotel reservations",
+        variant: "destructive",
+      });
+    } finally {
+      setHotelReservationsLoading(false);
+    }
+  };
+  
   if (!selectedEventId) {
     return (
       <DashboardLayout title="Event Map">
@@ -544,13 +659,14 @@ const EventMap = () => {
               <MapContainer 
                 style={{ height: "100%", width: "100%" }}
               >
+                <style>{clusterStyles}</style>
                 <MapUpdater center={center} zoom={zoom} />
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 
                 {/* Event Location Marker */}
-                <Marker position={center}>
+                <Marker position={center} icon={icons.event}>
                   <Popup>
                     <div>
                       <h3 className="font-bold">{mapData.event?.name}</h3>
@@ -562,280 +678,504 @@ const EventMap = () => {
                   </Popup>
                 </Marker>
                 
-                {/* Hotel Markers */}
-                {showHotels && filteredData.hotels.map((hotel) => (
-                  hotel.position && (
-                    <Marker
-                      key={hotel.id}
-                      position={hotel.position}
+                {/* Hotel Markers with Clustering */}
+                {showHotels && (
+                  <MarkerClusterGroup
+                    chunkedLoading
+                    spiderfyOnMaxZoom={true}
+                    disableClusteringAtZoom={18}
+                    maxClusterRadius={60}
+                    iconCreateFunction={(cluster) => {
+                      return L.divIcon({
+                        html: `<div class="cluster-icon hotel-cluster">${cluster.getChildCount()}</div>`,
+                        className: 'custom-marker-cluster',
+                        iconSize: L.point(40, 40)
+                      });
+                    }}
+                  >
+                    {filteredData.hotels.map((hotel) => (
+                      hotel.position && (
+                        <Marker
+                          key={hotel.id}
+                          position={hotel.position}
+                          icon={icons.hotel}
+                          eventHandlers={{
+                            click: () => {
+                              if (!hotel.reservations && !hotelReservationsLoading) {
+                                fetchHotelReservations(hotel.id);
+                              }
+                            }
+                          }}
+                        >
+                          <Popup>
+                            <div>
+                              <h3 className="font-bold">{hotel.name}</h3>
+                              <p>{hotel.address}</p>
+                              <p>{hotel.city}, {hotel.country}</p>
+                              {hotel.phone && <p>Phone: {hotel.phone}</p>}
+                              
+                              {/* Hotel Reservations section */}
+                              <div className="mt-3 border-t pt-2">
+                                <h4 className="font-semibold">Reservations:</h4>
+                                {hotelReservationsLoading && hotel.id === selectedHotelId ? (
+                                  <p className="text-sm text-muted-foreground">Loading reservations...</p>
+                                ) : hotel.reservations && hotel.reservations.length > 0 ? (
+                                  <ul className="list-disc pl-4 mt-1 max-h-40 overflow-y-auto">
+                                    {hotel.reservations.map(res => (
+                                      <li key={res.id} className="text-sm">
+                                        <span className="font-medium">{res.person.name}</span>
+                                        <div className="text-xs text-muted-foreground">
+                                          {new Date(res.check_in).toLocaleDateString()} to {new Date(res.check_out).toLocaleDateString()}
+                                          {res.room_type && <span> · {res.room_type}</span>}
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : hotel.reservations ? (
+                                  <p className="text-sm text-muted-foreground">No reservations found</p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">Click to load reservations</p>
+                                )}
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      )
+                    ))}
+                  </MarkerClusterGroup>
+                )}
+                
+                {/* Bus Routes with Clustering */}
+                {showBuses && (
+                  <>
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon bus-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
                     >
-                      <Popup>
-                        <div>
-                          <h3 className="font-bold">{hotel.name}</h3>
-                          <p>{hotel.address}</p>
-                          <p>{hotel.city}, {hotel.country}</p>
-                          {hotel.phone && <p>Phone: {hotel.phone}</p>}
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )
-                ))}
+                      {filteredData.buses.map((bus) => {
+                        if (bus.departurePosition) {
+                          return (
+                            <Marker key={`dep-${bus.id}`} position={bus.departurePosition} icon={icons.busDeparture}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Bus Departure</h3>
+                                  <p>{bus.departure_location}</p>
+                                  <p>Company: {bus.company}</p>
+                                  <p>Departure: {new Date(bus.departure_time).toLocaleString()}</p>
+                                  {bus.tickets.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {bus.tickets.map(ticket => (
+                                          <li key={ticket.id}>
+                                            {ticket.person.name}
+                                            {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon bus-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.buses.map((bus) => {
+                        if (bus.arrivalPosition) {
+                          return (
+                            <Marker key={`arr-${bus.id}`} position={bus.arrivalPosition} icon={icons.busArrival}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Bus Arrival</h3>
+                                  <p>{bus.arrival_location}</p>
+                                  <p>Company: {bus.company}</p>
+                                  <p>Arrival: {new Date(bus.arrival_time).toLocaleString()}</p>
+                                  {bus.tickets.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {bus.tickets.map(ticket => (
+                                          <li key={ticket.id}>
+                                            {ticket.person.name}
+                                            {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    {/* Bus Polylines */}
+                    {filteredData.buses.map((bus) => {
+                      if (bus.departurePosition && bus.arrivalPosition) {
+                        return (
+                          <Polyline
+                            key={`line-${bus.id}`}
+                            pathOptions={{ color: pathColors.bus, weight: 3 }}
+                            positions={[bus.departurePosition, bus.arrivalPosition]}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                  </>
+                )}
                 
-                {/* Bus Routes */}
-                {showBuses && filteredData.buses.map((bus) => {
-                  if (bus.departurePosition && bus.arrivalPosition) {
-                    return (
-                      <div key={bus.id}>
-                        <Marker position={bus.departurePosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Bus Departure</h3>
-                              <p>{bus.departure_location}</p>
-                              <p>Company: {bus.company}</p>
-                              <p>Departure: {new Date(bus.departure_time).toLocaleString()}</p>
-                              {bus.tickets.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {bus.tickets.map(ticket => (
-                                      <li key={ticket.id}>
-                                        {ticket.person.name}
-                                        {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
+                {/* Car Routes with Clustering */}
+                {showCars && (
+                  <>
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon car-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.cars.map((car) => {
+                        if (car.departurePosition) {
+                          return (
+                            <Marker key={`dep-${car.id}`} position={car.departurePosition} icon={icons.carDeparture}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Car Pickup</h3>
+                                  <p>{car.departure_location}</p>
+                                  <p>Driver: {car.driver_name}</p>
+                                  <p>Departure: {car.departure_time && new Date(car.departure_time).toLocaleString()}</p>
+                                  {car.reservations.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {car.reservations.map(res => (
+                                          <li key={res.id}>
+                                            {res.person.name}
+                                            {res.is_driver && <span className="text-xs ml-1">(Driver)</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Marker position={bus.arrivalPosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Bus Arrival</h3>
-                              <p>{bus.arrival_location}</p>
-                              <p>Company: {bus.company}</p>
-                              <p>Arrival: {new Date(bus.arrival_time).toLocaleString()}</p>
-                              {bus.tickets.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {bus.tickets.map(ticket => (
-                                      <li key={ticket.id}>
-                                        {ticket.person.name}
-                                        {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon car-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.cars.map((car) => {
+                        if (car.arrivalPosition) {
+                          return (
+                            <Marker key={`arr-${car.id}`} position={car.arrivalPosition} icon={icons.carArrival}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Car Dropoff</h3>
+                                  <p>{car.arrival_location}</p>
+                                  <p>Driver: {car.driver_name}</p>
+                                  <p>Arrival: {car.arrival_time && new Date(car.arrival_time).toLocaleString()}</p>
+                                  {car.reservations.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {car.reservations.map(res => (
+                                          <li key={res.id}>
+                                            {res.person.name}
+                                            {res.is_driver && <span className="text-xs ml-1">(Driver)</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Polyline
-                          pathOptions={{ color: pathColors.bus, weight: 3 }}
-                          positions={[bus.departurePosition, bus.arrivalPosition]}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    {/* Car Polylines */}
+                    {filteredData.cars.map((car) => {
+                      if (car.departurePosition && car.arrivalPosition) {
+                        return (
+                          <Polyline
+                            key={`line-${car.id}`}
+                            pathOptions={{ color: pathColors.car, weight: 3, dashArray: "5, 5" }}
+                            positions={[car.departurePosition, car.arrivalPosition]}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                  </>
+                )}
                 
-                {/* Car Routes */}
-                {showCars && filteredData.cars.map((car) => {
-                  if (car.departurePosition && car.arrivalPosition) {
-                    return (
-                      <div key={car.id}>
-                        <Marker position={car.departurePosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Car Pickup</h3>
-                              <p>{car.departure_location}</p>
-                              <p>Driver: {car.driver_name}</p>
-                              <p>Departure: {car.departure_time && new Date(car.departure_time).toLocaleString()}</p>
-                              {car.reservations.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {car.reservations.map(res => (
-                                      <li key={res.id}>
-                                        {res.person.name}
-                                        {res.is_driver && <span className="text-xs ml-1">(Driver)</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
+                {/* Train Routes with Clustering */}
+                {showTrains && (
+                  <>
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon train-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.trains.map((train) => {
+                        if (train.departurePosition) {
+                          return (
+                            <Marker key={`dep-${train.id}`} position={train.departurePosition} icon={icons.trainDeparture}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Train Departure</h3>
+                                  <p>{train.departure_station}</p>
+                                  <p>Company: {train.company}</p>
+                                  <p>Train: {train.train_number}</p>
+                                  <p>Departure: {new Date(train.departure_time).toLocaleString()}</p>
+                                  {train.tickets.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {train.tickets.map(ticket => (
+                                          <li key={ticket.id}>
+                                            {ticket.person.name}
+                                            {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Marker position={car.arrivalPosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Car Dropoff</h3>
-                              <p>{car.arrival_location}</p>
-                              <p>Driver: {car.driver_name}</p>
-                              <p>Arrival: {car.arrival_time && new Date(car.arrival_time).toLocaleString()}</p>
-                              {car.reservations.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {car.reservations.map(res => (
-                                      <li key={res.id}>
-                                        {res.person.name}
-                                        {res.is_driver && <span className="text-xs ml-1">(Driver)</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon train-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.trains.map((train) => {
+                        if (train.arrivalPosition) {
+                          return (
+                            <Marker key={`arr-${train.id}`} position={train.arrivalPosition} icon={icons.trainArrival}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Train Arrival</h3>
+                                  <p>{train.arrival_station}</p>
+                                  <p>Company: {train.company}</p>
+                                  <p>Train: {train.train_number}</p>
+                                  <p>Arrival: {new Date(train.arrival_time).toLocaleString()}</p>
+                                  {train.tickets.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {train.tickets.map(ticket => (
+                                          <li key={ticket.id}>
+                                            {ticket.person.name}
+                                            {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Polyline
-                          pathOptions={{ color: pathColors.car, weight: 3, dashArray: "5, 5" }}
-                          positions={[car.departurePosition, car.arrivalPosition]}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    {/* Train Polylines */}
+                    {filteredData.trains.map((train) => {
+                      if (train.departurePosition && train.arrivalPosition) {
+                        return (
+                          <Polyline
+                            key={`line-${train.id}`}
+                            pathOptions={{ color: pathColors.train, weight: 4 }}
+                            positions={[train.departurePosition, train.arrivalPosition]}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                  </>
+                )}
                 
-                {/* Train Routes */}
-                {showTrains && filteredData.trains.map((train) => {
-                  if (train.departurePosition && train.arrivalPosition) {
-                    return (
-                      <div key={train.id}>
-                        <Marker position={train.departurePosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Train Departure</h3>
-                              <p>{train.departure_station}</p>
-                              <p>Company: {train.company}</p>
-                              <p>Train: {train.train_number}</p>
-                              <p>Departure: {new Date(train.departure_time).toLocaleString()}</p>
-                              {train.tickets.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {train.tickets.map(ticket => (
-                                      <li key={ticket.id}>
-                                        {ticket.person.name}
-                                        {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
+                {/* Flight Routes with Clustering */}
+                {showFlights && (
+                  <>
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon flight-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.flights.map((flight) => {
+                        if (flight.departurePosition) {
+                          return (
+                            <Marker key={`dep-${flight.id}`} position={flight.departurePosition} icon={icons.flightDeparture}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Flight Departure</h3>
+                                  <p>{flight.departure_airport}</p>
+                                  <p>Airline: {flight.airline}</p>
+                                  <p>Flight: {flight.flight_number}</p>
+                                  <p>Departure: {new Date(flight.departure_time).toLocaleString()}</p>
+                                  {flight.tickets.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {flight.tickets.map(ticket => (
+                                          <li key={ticket.id}>
+                                            {ticket.person.name}
+                                            {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Marker position={train.arrivalPosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Train Arrival</h3>
-                              <p>{train.arrival_station}</p>
-                              <p>Company: {train.company}</p>
-                              <p>Train: {train.train_number}</p>
-                              <p>Arrival: {new Date(train.arrival_time).toLocaleString()}</p>
-                              {train.tickets.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {train.tickets.map(ticket => (
-                                      <li key={ticket.id}>
-                                        {ticket.person.name}
-                                        {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={60}
+                      iconCreateFunction={(cluster) => {
+                        return L.divIcon({
+                          html: `<div class="cluster-icon flight-cluster">${cluster.getChildCount()}</div>`,
+                          className: 'custom-marker-cluster',
+                          iconSize: L.point(40, 40)
+                        });
+                      }}
+                    >
+                      {filteredData.flights.map((flight) => {
+                        if (flight.arrivalPosition) {
+                          return (
+                            <Marker key={`arr-${flight.id}`} position={flight.arrivalPosition} icon={icons.flightArrival}>
+                              <Popup>
+                                <div>
+                                  <h3 className="font-bold">Flight Arrival</h3>
+                                  <p>{flight.arrival_airport}</p>
+                                  <p>Airline: {flight.airline}</p>
+                                  <p>Flight: {flight.flight_number}</p>
+                                  <p>Arrival: {new Date(flight.arrival_time).toLocaleString()}</p>
+                                  {flight.tickets.length > 0 && (
+                                    <div className="mt-2">
+                                      <h4 className="font-semibold">Passengers:</h4>
+                                      <ul className="list-disc pl-4">
+                                        {flight.tickets.map(ticket => (
+                                          <li key={ticket.id}>
+                                            {ticket.person.name}
+                                            {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Polyline
-                          pathOptions={{ color: pathColors.train, weight: 4 }}
-                          positions={[train.departurePosition, train.arrivalPosition]}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-                
-                {/* Flight Routes */}
-                {showFlights && filteredData.flights.map((flight) => {
-                  if (flight.departurePosition && flight.arrivalPosition) {
-                    return (
-                      <div key={flight.id}>
-                        <Marker position={flight.departurePosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Flight Departure</h3>
-                              <p>{flight.departure_airport}</p>
-                              <p>Airline: {flight.airline}</p>
-                              <p>Flight: {flight.flight_number}</p>
-                              <p>Departure: {new Date(flight.departure_time).toLocaleString()}</p>
-                              {flight.tickets.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {flight.tickets.map(ticket => (
-                                      <li key={ticket.id}>
-                                        {ticket.person.name}
-                                        {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Marker position={flight.arrivalPosition}>
-                          <Popup>
-                            <div>
-                              <h3 className="font-bold">Flight Arrival</h3>
-                              <p>{flight.arrival_airport}</p>
-                              <p>Airline: {flight.airline}</p>
-                              <p>Flight: {flight.flight_number}</p>
-                              <p>Arrival: {new Date(flight.arrival_time).toLocaleString()}</p>
-                              {flight.tickets.length > 0 && (
-                                <div className="mt-2">
-                                  <h4 className="font-semibold">Passengers:</h4>
-                                  <ul className="list-disc pl-4">
-                                    {flight.tickets.map(ticket => (
-                                      <li key={ticket.id}>
-                                        {ticket.person.name}
-                                        {ticket.seat && <span className="text-xs ml-1">(Seat: {ticket.seat})</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                        
-                        <Polyline
-                          pathOptions={{ color: pathColors.flight, weight: 3, dashArray: "10, 10" }}
-                          positions={[flight.departurePosition, flight.arrivalPosition]}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
+                    </MarkerClusterGroup>
+                    
+                    {/* Flight Polylines */}
+                    {filteredData.flights.map((flight) => {
+                      if (flight.departurePosition && flight.arrivalPosition) {
+                        return (
+                          <Polyline
+                            key={`line-${flight.id}`}
+                            pathOptions={{ color: pathColors.flight, weight: 3, dashArray: "10, 10" }}
+                            positions={[flight.departurePosition, flight.arrivalPosition]}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                  </>
+                )}
               </MapContainer>
             </div>
           ) : (

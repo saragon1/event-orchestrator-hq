@@ -100,13 +100,31 @@ export function EventScheduleModal({
     path: ["endTime"],
   }).refine((data) => {
     if (!event) return true;
-    return !isBefore(data.startDate, new Date(event.start_date));
+    
+    // Convert both dates to date-only (no time component) for proper comparison
+    const startDate = new Date(data.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const eventStartDate = new Date(event.start_date);
+    eventStartDate.setHours(0, 0, 0, 0);
+    
+    // Return true if startDate is same as or after event start date
+    return !isBefore(startDate, eventStartDate);
   }, {
     message: "Start date must be within event dates",
     path: ["startDate"],
   }).refine((data) => {
     if (!event) return true;
-    return !isAfter(data.endDate, new Date(event.end_date));
+    
+    // Convert both dates to date-only (no time component) for proper comparison
+    const endDate = new Date(data.endDate);
+    endDate.setHours(0, 0, 0, 0);
+    
+    const eventEndDate = new Date(event.end_date);
+    eventEndDate.setHours(0, 0, 0, 0);
+    
+    // Return true if endDate is same as or before event end date
+    return !isAfter(endDate, eventEndDate);
   }, {
     message: "End date must be within event dates",
     path: ["endDate"],
@@ -222,8 +240,12 @@ export function EventScheduleModal({
     }
     
     const [hours, minutes] = timeStr.split(':').map(Number);
+    
+    // Create a new date object with the same date but no time component
     const newDate = new Date(date);
+    // Set time components explicitly while preserving the date part
     newDate.setHours(hours, minutes, 0, 0);
+    
     return newDate;
   };
   
@@ -344,10 +366,21 @@ export function EventScheduleModal({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => 
-                            event ? isBefore(date, new Date(event.start_date)) || 
-                                    isAfter(date, new Date(event.end_date)) : false
-                          }
+                          disabled={(date) => {
+                            if (!event) return false;
+                            
+                            // Create copies for comparison with time set to midnight
+                            const compareDate = new Date(date);
+                            compareDate.setHours(0, 0, 0, 0);
+                            
+                            const eventStartDate = new Date(event.start_date);
+                            eventStartDate.setHours(0, 0, 0, 0);
+                            
+                            const eventEndDate = new Date(event.end_date);
+                            eventEndDate.setHours(0, 0, 0, 0);
+                            
+                            return isBefore(compareDate, eventStartDate) || isAfter(compareDate, eventEndDate);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -399,10 +432,21 @@ export function EventScheduleModal({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => 
-                            event ? isBefore(date, new Date(event.start_date)) || 
-                                   isAfter(date, new Date(event.end_date)) : false
-                          }
+                          disabled={(date) => {
+                            if (!event) return false;
+                            
+                            // Create copies for comparison with time set to midnight
+                            const compareDate = new Date(date);
+                            compareDate.setHours(0, 0, 0, 0);
+                            
+                            const eventStartDate = new Date(event.start_date);
+                            eventStartDate.setHours(0, 0, 0, 0);
+                            
+                            const eventEndDate = new Date(event.end_date);
+                            eventEndDate.setHours(0, 0, 0, 0);
+                            
+                            return isBefore(compareDate, eventStartDate) || isAfter(compareDate, eventEndDate);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
