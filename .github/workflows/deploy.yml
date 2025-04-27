@@ -39,7 +39,14 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      - name: Upload artifact
+      - name: Setup artifact actions
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./dist
+        if: always() # Optional step to make sure we always have build artifacts for debugging
+
+      - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v2
         with:
           path: ./dist  # Adjust this path if your build output directory is different
