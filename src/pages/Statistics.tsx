@@ -53,6 +53,7 @@ interface GlobalStatistics {
   transportationDistribution: { name: string; value: number }[];
   topLocations: { name: string; count: number }[];
   hotelReservationTrend: { name: string; bookings: number }[];
+  inviteStatusData: { name: string; value: number }[];
   persons: Person[];
 }
 
@@ -64,7 +65,7 @@ interface EventStatistics {
   hotelBookingRate: number;
   transportationDistribution: { name: string; value: number }[];
   participantRoleDistribution: { name: string; value: number }[];
-  inviteStatusOverTime: { date: string; waiting: number; invited: number; confirmed: number; declined: number }[];
+  inviteStatusData: { name: string; value: number }[];
   scheduleItemsByType: { name: string; count: number }[];
   persons: Person[];
 }
@@ -92,6 +93,7 @@ const Statistics = () => {
     transportationDistribution: [],
     topLocations: [],
     hotelReservationTrend: [],
+    inviteStatusData: [],
     persons: []
   });
   const [eventStats, setEventStats] = useState<EventStatistics>({
@@ -102,7 +104,7 @@ const Statistics = () => {
     hotelBookingRate: 0,
     transportationDistribution: [],
     participantRoleDistribution: [],
-    inviteStatusOverTime: [],
+    inviteStatusData: [],
     scheduleItemsByType: [],
     persons: []
   });
@@ -251,7 +253,15 @@ const Statistics = () => {
           .slice(0, 5);
 
         // Generate hotel reservation trend
-        const hotelReservationTrend = processHotelReservationTrend(filteredHotelReservations);
+        const hotelReservationTrend = processHotelReservationTrend(filteredHotelReservations, dateRange);
+        
+        // Process invite status data for global stats
+        const inviteStatusData = [
+          { name: 'Waiting', value: statusCounts.waiting_invite },
+          { name: 'Invited', value: statusCounts.invited },
+          { name: 'Confirmed', value: statusCounts.confirmed },
+          { name: 'Declined', value: statusCounts.declined }
+        ];
 
         setGlobalStats({
           totalEvents,
@@ -263,6 +273,7 @@ const Statistics = () => {
           transportationDistribution,
           topLocations,
           hotelReservationTrend,
+          inviteStatusData,
           persons: personsData || []
         });
       } catch (error) {
@@ -421,7 +432,12 @@ const Statistics = () => {
           .sort((a, b) => b.count - a.count);
         
         // Generate invite status over time (past 7 days)
-        const inviteStatusOverTime = generateInviteStatusOverTime();
+        const inviteStatusData = [
+          { name: 'Waiting', value: statusCounts.waiting_invite },
+          { name: 'Invited', value: statusCounts.invited },
+          { name: 'Confirmed', value: statusCounts.confirmed },
+          { name: 'Declined', value: statusCounts.declined }
+        ];
         
         setEventStats({
           totalParticipants: filteredPersonIds.length,
@@ -431,7 +447,7 @@ const Statistics = () => {
           hotelBookingRate,
           transportationDistribution,
           participantRoleDistribution,
-          inviteStatusOverTime,
+          inviteStatusData,
           scheduleItemsByType,
           persons: personsData as Person[]
         });
@@ -476,64 +492,96 @@ const Statistics = () => {
   };
 
   // Process hotel reservations to get trend data
-  const processHotelReservationTrend = (reservations: { check_in: string }[]) => {
+  const processHotelReservationTrend = (reservations: { check_in: string }[], range?: DateRange) => {
+    // If no reservations, return empty data
+    if (!reservations.length) {
+      return [];
+    }
+    
     const monthCounts: Record<string, number> = {};
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    // Get the current month and the last 5 months
-    const today = new Date();
-    const currentMonthIndex = today.getMonth();
+    // Filter reservations by date range if provided
+    let filteredReservations = [...reservations];
     
-    // Create an array of the last 6 months (including current)
-    const lastSixMonths = [];
-    for (let i = 5; i >= 0; i--) {
-      const monthIndex = (currentMonthIndex - i + 12) % 12; // Handle wrap around to previous year
-      lastSixMonths.push(months[monthIndex]);
+    if (range?.from && range?.to) {
+      // Filter reservations within the selected date range
+      filteredReservations = reservations.filter(reservation => {
+        const checkInDate = new Date(reservation.check_in);
+        return checkInDate >= range.from! && checkInDate <= range.to!;
+      });
+    }
+    
+    // If no reservations after filtering or no date range, use last 6 months as default
+    if (!filteredReservations.length || !range?.from) {
+      const today = new Date();
+      const currentMonthIndex = today.getMonth();
+      
+      // Create an array of the last 6 months (including current)
+      const lastSixMonths = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthIndex = (currentMonthIndex - i + 12) % 12; // Handle wrap around to previous year
+        lastSixMonths.push(months[monthIndex]);
+      }
+      
+      // Initialize counts for each month with zero
+      lastSixMonths.forEach(month => {
+        monthCounts[month] = 0;
+      });
+      
+      // Count reservations per month (from the original set)
+      reservations.forEach(reservation => {
+        const date = new Date(reservation.check_in);
+        const monthName = months[date.getMonth()];
+        // Only count if it's in our 6-month window
+        if (lastSixMonths.includes(monthName)) {
+          monthCounts[monthName] = (monthCounts[monthName] || 0) + 1;
+        }
+      });
+      
+      // Return data for default 6-month range
+      return lastSixMonths.map(month => ({
+        name: month,
+        bookings: monthCounts[month]
+      }));
+    }
+    
+    // If we have a date range and reservations, process them by month
+    // Find min and max dates to determine the range of months to show
+    const dates = filteredReservations.map(r => new Date(r.check_in));
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    
+    // Create array of month names in the range
+    const monthsInRange = [];
+    const currentDate = new Date(minDate);
+    currentDate.setDate(1); // Start at beginning of month
+    
+    while (currentDate <= maxDate) {
+      monthsInRange.push(months[currentDate.getMonth()]);
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      
+      // Prevent infinite loop if something goes wrong
+      if (monthsInRange.length > 24) break;
     }
     
     // Initialize counts for each month with zero
-    lastSixMonths.forEach(month => {
+    monthsInRange.forEach(month => {
       monthCounts[month] = 0;
     });
     
     // Count reservations per month
-    reservations.forEach(reservation => {
+    filteredReservations.forEach(reservation => {
       const date = new Date(reservation.check_in);
       const monthName = months[date.getMonth()];
-      // Only count if it's in our 6-month window
-      if (lastSixMonths.includes(monthName)) {
-        monthCounts[monthName] = (monthCounts[monthName] || 0) + 1;
-      }
+      monthCounts[monthName] = (monthCounts[monthName] || 0) + 1;
     });
     
     // Convert to the format needed for the chart
-    return lastSixMonths.map(month => ({
+    return monthsInRange.map(month => ({
       name: month,
       bookings: monthCounts[month]
     }));
-  };
-
-  // Generate mock invite status over time data
-  const generateInviteStatusOverTime = () => {
-    // Generate data for the last 7 days
-    const result = [];
-    const today = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = format(date, 'MMM dd');
-      
-      result.push({
-        date: dateStr,
-        waiting: Math.floor(Math.random() * 10) + 1,
-        invited: Math.floor(Math.random() * 15) + 5,
-        confirmed: Math.floor(Math.random() * 20) + 10,
-        declined: Math.floor(Math.random() * 5)
-      });
-    }
-    
-    return result;
   };
 
   // Check if there's an event selected for the event-specific tab
@@ -796,19 +844,18 @@ const Statistics = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle>Top Event Locations</CardTitle>
-                      <CardDescription>Most popular cities for events</CardDescription>
+                      <CardDescription>Most popular locations for events</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            layout="vertical"
                             data={globalStats.topLocations}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis type="category" dataKey="name" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
                             <Tooltip />
                             <Legend />
                             <Bar dataKey="count" fill="#82ca9d" name="Events" />
@@ -822,7 +869,11 @@ const Statistics = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle>Hotel Reservation Trend</CardTitle>
-                      <CardDescription>Number of hotel reservations in the last 6 months</CardDescription>
+                      <CardDescription>
+                        {dateRange?.from && dateRange?.to 
+                          ? `Reservations from ${format(dateRange.from, 'MMM d, yyyy')} to ${format(dateRange.to, 'MMM d, yyyy')}`
+                          : 'Number of hotel reservations in the last 6 months'}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="h-[300px]">
@@ -1132,13 +1183,12 @@ const Statistics = () => {
                       <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            layout="vertical"
                             data={eventStats.scheduleItemsByType}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis type="category" dataKey="name" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
                             <Tooltip />
                             <Legend />
                             <Bar dataKey="count" fill="#82ca9d" name="Items" />
@@ -1148,29 +1198,26 @@ const Statistics = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Invite Status Over Time */}
+                  {/* Invite Status Trend */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Invite Status Trend</CardTitle>
-                      <CardDescription>Participant status over the last 7 days</CardDescription>
+                      <CardTitle>Invite Status Distribution</CardTitle>
+                      <CardDescription>Distribution of participant invitation statuses</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={eventStats.inviteStatusOverTime}
+                          <BarChart
+                            data={eventStats.inviteStatusData}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="name" />
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Line type="monotone" dataKey="waiting" stroke="#FF8042" name="Waiting" />
-                            <Line type="monotone" dataKey="invited" stroke="#FFBB28" name="Invited" />
-                            <Line type="monotone" dataKey="confirmed" stroke="#00C49F" name="Confirmed" />
-                            <Line type="monotone" dataKey="declined" stroke="#FF0000" name="Declined" />
-                          </LineChart>
+                            <Bar dataKey="value" fill="#8884d8" name="Participants" />
+                          </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </CardContent>

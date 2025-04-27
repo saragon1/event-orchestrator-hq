@@ -35,6 +35,12 @@ export const it = {
     passenger: "Passegero",
     success: "Successo",
     ticketDeletedSuccessfully: "Biglietto eliminato con successo",
+    addTicket: "Aggiungi Biglietto",
+    seats: "Posti",
+    company: "Compagnia",
+    departure: "Partenza",
+    arrival: "Arrivo",
+    capacity: "Capacità"
   },
   dashboard: {
     title: "Dashboard",
