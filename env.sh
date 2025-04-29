@@ -1,47 +1,44 @@
 #!/bin/sh
+set -e
 
-# Recreate config file
-rm -rf ./env-config.js
-touch ./env-config.js
+# Define the path to env-config.js
+ENV_CONFIG_PATH="/usr/share/nginx/html/env-config.js"
 
-# Add assignment 
-echo "window._env_ = {" >> ./env-config.js
-
-# Read each line in .env file
-# Each line represents key=value pairs
-if [ -f .env ]; then
-  while read -r line || [ -n "$line" ];
-  do
-    # Split env variables by character `=`
-    if printf '%s\n' "$line" | grep -q -e '='; then
-      varname=$(printf '%s\n' "$line" | sed -e 's/=.*//')
-      varvalue=$(printf '%s\n' "$line" | sed -e 's/^[^=]*=//')
-    fi
-
-    # Read value of current variable if exists as Environment variable
-    value=$(printf '%s\n' "${!varname}")
-    # Otherwise use value from .env file
-    [ -z "$value" ] && value=${varvalue}
-    
-    # Append configuration property to JS file
-    echo "  $varname: \"$value\"," >> ./env-config.js
-  done < .env
+# Create initial env-config.js if it doesn't exist
+if [ ! -f "$ENV_CONFIG_PATH" ]; then
+    echo 'window._env_ = {};' > "$ENV_CONFIG_PATH"
 fi
 
-# Also add all environment variables starting with REACT_APP_
-for envvar in $(env | grep -E "^REACT_APP_" | sort); do
-  varname=$(printf '%s\n' "$envvar" | sed -e 's/=.*//')
-  varvalue=$(printf '%s\n' "${!varname}")
-  
-  echo "  $varname: \"$varvalue\"," >> ./env-config.js
-done
+# Function to add or update an environment variable
+set_env_var() {
+    local var_name=$1
+    local var_value=$2
+    
+    # Escape special characters in the value
+    var_value=$(echo "$var_value" | sed 's/"/\\"/g')
+    
+    # Check if the variable already exists
+    if grep -q "$var_name" "$ENV_CONFIG_PATH"; then
+        # Update existing variable
+        sed -i "s|window._env_.$var_name = .*;|window._env_.$var_name = \"$var_value\";|" "$ENV_CONFIG_PATH"
+    else
+        # Add new variable
+        echo "window._env_.$var_name = \"$var_value\";" >> "$ENV_CONFIG_PATH"
+    fi
+}
 
-# Also add VITE_ environment variables at runtime
-for envvar in $(env | grep -E "^VITE_" | sort); do
-  varname=$(printf '%s\n' "$envvar" | sed -e 's/=.*//')
-  varvalue=$(printf '%s\n' "${!varname}")
-  
-  echo "  $varname: \"$varvalue\"," >> ./env-config.js
-done
+# Set environment variables
+if [ -n "$REACT_APP_API_URL" ]; then
+    set_env_var "REACT_APP_API_URL" "$REACT_APP_API_URL"
+fi
 
-echo "}" >> ./env-config.js 
+if [ -n "$REACT_APP_WS_URL" ]; then
+    set_env_var "REACT_APP_WS_URL" "$REACT_APP_WS_URL"
+fi
+
+if [ -n "$REACT_APP_AUTH_URL" ]; then
+    set_env_var "REACT_APP_AUTH_URL" "$REACT_APP_AUTH_URL"
+fi
+
+# Ensure the file is readable by nginx
+chmod 644 "$ENV_CONFIG_PATH" 
