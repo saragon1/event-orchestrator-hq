@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --base=/event-orchestrator-hq/
 
       # Copy index.html to 404.html to handle client-side routing
       - name: Configure SPA routing

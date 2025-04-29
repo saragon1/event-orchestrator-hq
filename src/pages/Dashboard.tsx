@@ -350,14 +350,14 @@ const Dashboard = () => {
           <AccordionItem value="participants">
             <AccordionTrigger className="flex items-center">
               <div className="flex items-center">
-                <h2 className="text-2xl font-semibold">Event Participants</h2>
-                <p className="ml-4 text-muted-foreground">
-                  {selectedEvent ? `${assignedPersons.length} participants` : "Select an event to view participants"}
-                </p>
-              </div>
+          <h2 className="text-2xl font-semibold">Event Participants</h2>
+          <p className="ml-4 text-muted-foreground">
+            {selectedEvent ? `${assignedPersons.length} participants` : "Select an event to view participants"}
+          </p>
+        </div>
             </AccordionTrigger>
             <AccordionContent>
-              <ParticipantsTable selectedEventId={selectedEventId} />
+        <ParticipantsTable selectedEventId={selectedEventId} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

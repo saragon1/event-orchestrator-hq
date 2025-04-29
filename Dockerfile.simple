@@ -19,8 +19,12 @@ RUN echo 'window._env_ = {};' > ./dist/env-config.js
 # Use a different Nginx image known for better compatibility
 FROM nginxinc/nginx-unprivileged:stable-alpine
 
-# Create a directory for our scripts
-RUN mkdir -p /scripts
+# Create a directory for our scripts and set proper permissions
+USER root
+RUN mkdir -p /scripts && \
+    chown -R nginx:nginx /scripts && \
+    chmod -R 755 /scripts
+USER nginx
 
 # Copy configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -29,15 +33,17 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy and set up environment script in a writable location
-COPY env.sh /scripts/
+COPY --chown=nginx:nginx env.sh /scripts/
 RUN chmod +x /scripts/env.sh
 
 # Set correct file permissions for web content
+USER root
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
+USER nginx
 
 # Use a startup script to set env vars
-COPY docker-entrypoint.sh /scripts/
+COPY --chown=nginx:nginx docker-entrypoint.sh /scripts/
 RUN chmod +x /scripts/docker-entrypoint.sh
 
 EXPOSE 8080
