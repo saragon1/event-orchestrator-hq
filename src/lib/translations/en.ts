@@ -13,6 +13,7 @@ export const en = {
     eventSchedule: "Event Schedule",
     eventMap: "Event Map",
     hotelReservations: "Hotel Reservations",
+    eventExpenses: "Event Expenses",
     allEvents: "All Events",
     loading: "Loading...",
     edit: "Edit",

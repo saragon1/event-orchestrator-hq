@@ -1,12 +1,11 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/layout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -153,6 +152,16 @@ const EventForm = () => {
 
   return (
     <DashboardLayout title={id ? "Edit Event" : "Create Event"}>
+      {id && (
+        <div className="mb-4 flex justify-end">
+          <Button asChild variant="outline">
+            <Link to={`/events/${id}/expenses`}>
+              <DollarSign className="mr-2 h-4 w-4" />
+              View Expenses
+            </Link>
+          </Button>
+        </div>
+      )}
       <Card>
         <CardContent className="pt-6">
           <Form {...form}>

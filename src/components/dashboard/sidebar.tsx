@@ -1,19 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car, Train, Calendar, Map, BarChart } from "lucide-react";
+import { UserPlus, Hotel, Plane, Bus, LayoutDashboard, Users, List, BedDouble, Car, Train, Calendar, Map, BarChart, DollarSign } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEventStore } from "@/stores/event-store";
 
 interface SidebarItemProps {
   icon: React.ElementType;
   label: string;
   href: string;
   isActive?: boolean;
+  disabled?: boolean;
 }
 
-const SidebarItem = ({ icon: Icon, label, href, isActive }: SidebarItemProps) => {
+const SidebarItem = ({ icon: Icon, label, href, isActive, disabled }: SidebarItemProps) => {
   return (
     <Link to={href}>
       <Button
@@ -23,8 +25,10 @@ const SidebarItem = ({ icon: Icon, label, href, isActive }: SidebarItemProps) =>
           "w-full justify-start gap-2 px-2",
           isActive
             ? "bg-accent text-accent-foreground font-medium"
-            : "hover:bg-accent hover:text-accent-foreground"
+            : "hover:bg-accent hover:text-accent-foreground",
+          disabled && "opacity-50 cursor-not-allowed"
         )}
+        disabled={disabled}
       >
         <Icon className="h-4 w-4" />
         <span>{label}</span>
@@ -42,6 +46,7 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
   const location = useLocation();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const { selectedEventId } = useEventStore();
 
   const mainNavItems = [
     {
@@ -96,6 +101,12 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
       icon: Train,
       label: t("common.trains"),
       href: "/trains",
+    },
+    {
+      icon: DollarSign,
+      label: t("common.eventExpenses"),
+      href: "/expenses",
+      disabled: !selectedEventId,
     },
   ];
 

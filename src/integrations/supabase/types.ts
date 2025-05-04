@@ -222,6 +222,56 @@ export type Database = {
           },
         ]
       }
+      event_expenses: {
+        Row: {
+          amount: number
+          category:
+            | Database["public"]["Enums"]["event_expenses_category"]
+            | null
+          created_at: string | null
+          date: string
+          description: string | null
+          event_id: string
+          id: string
+          resource_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          category?:
+            | Database["public"]["Enums"]["event_expenses_category"]
+            | null
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          resource_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?:
+            | Database["public"]["Enums"]["event_expenses_category"]
+            | null
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          resource_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_expenses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_hotels: {
         Row: {
           created_at: string | null
@@ -767,10 +817,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       car_type: "private" | "ncc" | "taxi"
+      event_expenses_category:
+        | "transportation"
+        | "accomodation"
+        | "food"
+        | "services"
+        | "materials"
+        | "other"
       event_role: "vip" | "attendee" | "speaker" | "staff" | "other"
       invite_status: "waiting_invite" | "invited" | "confirmed" | "declined"
     }
@@ -889,6 +949,14 @@ export const Constants = {
   public: {
     Enums: {
       car_type: ["private", "ncc", "taxi"],
+      event_expenses_category: [
+        "transportation",
+        "accomodation",
+        "food",
+        "services",
+        "materials",
+        "other",
+      ],
       event_role: ["vip", "attendee", "speaker", "staff", "other"],
       invite_status: ["waiting_invite", "invited", "confirmed", "declined"],
     },

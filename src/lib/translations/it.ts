@@ -12,6 +12,7 @@ export const it = {
     eventSchedule: "Programma Evento",
     eventMap: "Mappa Evento",
     hotelReservations: "Prenotazioni Hotel",
+    eventExpenses: "Spese Evento",
     allEvents: "Tutti gli Eventi",
     loading: "Caricamento...",
     edit: "Modifica",
