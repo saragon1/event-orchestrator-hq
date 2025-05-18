@@ -3,11 +3,12 @@ import { useEventStore } from "@/stores/event-store";
 import { supabase } from "@/integrations/supabase/client";
 import { PersonCard } from "./person-card";
 import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ExcelUpload } from "./ExcelUpload";
 
 interface Person {
   id: string;
@@ -30,66 +31,67 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const selectedEventId = useEventStore((state) => state.selectedEventId);
   const [persons, setPersons] = useState<Person[]>([]);
 
-  useEffect(() => {
-    const fetchPersons = async () => {
-      setIsLoading(true);
-      try {
-        const { data: personsData, error: personsError } = await supabase
-          .from('persons')
-          .select('*')
-          .ilike('name', `%${searchTerm}%`);
+  const fetchPersons = async () => {
+    setIsLoading(true);
+    try {
+      const { data: personsData, error: personsError } = await supabase
+        .from('persons')
+        .select('*')
+        .ilike('name', `%${searchTerm}%`);
 
-        if (personsError) throw personsError;
+      if (personsError) throw personsError;
 
-        if (selectedEventId && personsData) {
-          const { data: reservations } = await supabase
-            .from('hotel_reservations')
-            .select('person_id')
-            .eq('event_id', selectedEventId);
+      if (selectedEventId && personsData) {
+        const { data: reservations } = await supabase
+          .from('hotel_reservations')
+          .select('person_id')
+          .eq('event_id', selectedEventId);
 
-          const { data: flightTickets } = await supabase
-            .from('flight_tickets')
-            .select('person_id')
-            .eq('event_id', selectedEventId);
+        const { data: flightTickets } = await supabase
+          .from('flight_tickets')
+          .select('person_id')
+          .eq('event_id', selectedEventId);
 
-          const { data: busTickets } = await supabase
-            .from('bus_tickets')
-            .select('person_id')
-            .eq('event_id', selectedEventId);
+        const { data: busTickets } = await supabase
+          .from('bus_tickets')
+          .select('person_id')
+          .eq('event_id', selectedEventId);
 
-          const { data: carReservations } = await supabase
-            .from('car_reservations')
-            .select('person_id')
-            .eq('event_id', selectedEventId);
+        const { data: carReservations } = await supabase
+          .from('car_reservations')
+          .select('person_id')
+          .eq('event_id', selectedEventId);
 
-          const personsWithBookings = personsData.map(person => ({
-            ...person,
-            hasHotel: reservations?.some(r => r.person_id === person.id) || false,
-            hasFlight: flightTickets?.some(t => t.person_id === person.id) || false,
-            hasBus: busTickets?.some(t => t.person_id === person.id) || false,
-            hasCar: carReservations?.some(r => r.person_id === person.id) || false,
-          }));
+        const personsWithBookings = personsData.map(person => ({
+          ...person,
+          hasHotel: reservations?.some(r => r.person_id === person.id) || false,
+          hasFlight: flightTickets?.some(t => t.person_id === person.id) || false,
+          hasBus: busTickets?.some(t => t.person_id === person.id) || false,
+          hasCar: carReservations?.some(r => r.person_id === person.id) || false,
+        }));
 
-          setPersons(personsWithBookings);
-        } else if (personsData) {
-          setPersons(personsData.map(person => ({
-            ...person,
-            hasHotel: false,
-            hasFlight: false,
-            hasBus: false,
-            hasCar: false,
-          })));
-        }
-      } catch (error) {
-        console.error('Error fetching persons:', error);
-      } finally {
-        setIsLoading(false);
+        setPersons(personsWithBookings);
+      } else if (personsData) {
+        setPersons(personsData.map(person => ({
+          ...person,
+          hasHotel: false,
+          hasFlight: false,
+          hasBus: false,
+          hasCar: false,
+        })));
       }
-    };
+    } catch (error) {
+      console.error('Error fetching persons:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPersons();
   }, [searchTerm, selectedEventId]);
 
@@ -115,10 +117,16 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={onAdd}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add Person
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import Excel
+          </Button>
+          <Button onClick={onAdd}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Person
+          </Button>
+        </div>
       </div>
 
       {persons.length === 0 ? (
@@ -168,6 +176,12 @@ export const PersonList = ({ onAdd }: PersonListProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ExcelUpload
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={fetchPersons}
+      />
     </div>
   );
 };

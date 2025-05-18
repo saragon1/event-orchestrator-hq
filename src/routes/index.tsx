@@ -34,6 +34,7 @@ import TrainDetails from "@/pages/TrainDetails";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import { EventExpenses } from "@/pages/EventExpenses";
+import EventDocuments from "@/pages/EventDocuments";
 
 // Public routes (no auth required)
 export const publicRoutes: RouteObject[] = [
@@ -180,6 +181,10 @@ export const protectedRoutes: RouteObject[] = [
   { 
     path: "/profile",
     element: <Profile />
+  },
+  { 
+    path: "/events/:id/documents",
+    element: <EventDocuments />
   },
 ];
 
