@@ -218,16 +218,17 @@ export function EventExpenses() {
           for (const row of jsonData) {
             const expenseData = {
               event_id: selectedEventId,
-              type: (row as any).Type?.toLowerCase() || 'other',
-              category: (row as any).Category?.toLowerCase() || 'other',
-              description: (row as any).Description || '',
-              amount: parseFloat((row as any).Amount) || 0,
-              date: new Date((row as any).Date).toISOString().split('T')[0],
+              type: (row as Record<string, string>).Type?.toLowerCase() || 'other',
+              category: (row as Record<string, string>).Category?.toLowerCase() || 'other',
+              description: (row as Record<string, string>).Description || '',
+              amount: parseFloat((row as Record<string, string>).Amount) || 0,
+              date: new Date((row as Record<string, string>).Date).toISOString().split('T')[0],
             };
 
             const { error } = await supabase
               .from("event_expenses")
-              .insert(expenseData);
+              //TODO: Fix this type
+              .insert(expenseData as Database["public"]["Tables"]["event_expenses"]["Insert"]);
 
             if (error) throw error;
           }
@@ -363,13 +364,13 @@ export function EventExpenses() {
               <Upload className="h-4 w-4 mr-2" />
               {isImporting ? "Importing..." : "Import from Excel"}
             </Button>
-            <Button 
+            {/* <Button 
               variant="outline" 
               onClick={handleShare}
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share
-            </Button>
+            </Button> */}
             <input
               id="excel-upload"
               type="file"
