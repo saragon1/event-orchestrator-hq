@@ -49,6 +49,7 @@ export const DashboardHeader = ({
           variant="ghost"
           size="icon"
           onClick={() => setIsOpen(!isOpen)}
+          className="lg:hidden"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </Button>
