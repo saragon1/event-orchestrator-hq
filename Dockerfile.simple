@@ -2,10 +2,18 @@ FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
-
-# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci
+
+# Se stiamo buildando per ARM, ignoro gli script;
+# altrimenti eseguo npm ci normalmente.
+ARG TARGETPLATFORM
+RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
+      npm ci --ignore-scripts; \
+    else \
+      npm ci; \
+    fi
+
+COPY . .
 
 # Copy all files
 COPY . .
