@@ -8,12 +8,9 @@ COPY package*.json ./
 # altrimenti eseguo npm ci normalmente.
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
-      npm ci --ignore-scripts; \
-    else \
-      npm ci; \
-    fi
-
-COPY . .
+      npm config set ignore-scripts true; \
+    fi; \
+npm ci
 
 # Copy all files
 COPY . .
