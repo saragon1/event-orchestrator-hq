@@ -114,7 +114,8 @@ jobs:
 #          cache-to: type=gha,mode=max
 
   manifest:
-    needs: [ build-amd64, build-arm64, build-arm7 ]
+    # needs: [ build-amd64, build-arm64, build-arm7 ]
+    needs: [ build-amd64, build-arm64 ]
     runs-on: ubuntu-latest
     permissions:
       packages: write
