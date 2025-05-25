@@ -1,4 +1,4 @@
-name: Build and Push Container
+name: Build and Push Multi-Arch Container
 
 on:
   push:
@@ -16,29 +16,31 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      digest: ${{ steps.push_amd64.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push AMD64 image
-        id: push_amd64 # Aggiungiamo un ID allo step
-        uses: docker/build-push-action@v4
+        id: push_amd64
+        uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -47,77 +49,38 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      digest: ${{ steps.push_arm64.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up QEMU for ARM64
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push ARM64 image
-        id: push_arm64 # Aggiungiamo un ID allo step
-        uses: docker/build-push-action@v4
+        id: push_arm64
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.simple
           platforms: linux/arm64
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-#  build-arm7:
-#    runs-on: ubuntu-latest
-#    permissions:
-#      contents: read
-#      packages: write
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v3
-#
-#      - name: Set up QEMU for ARMv7
-#        uses: docker/setup-qemu-action@v2
-#        with:
-#          platforms: 'linux/arm'
-#
-#      - name: Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v2
-#
-#      - name: Log in to GitHub Container Registry
-#        uses: docker/login-action@v2
-#        with:
-#          registry: ${{ env.REGISTRY }}
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Build and push ARMv7 image
-#        id: push_arm # Aggiungiamo un ID allo step
-#        uses: docker/build-push-action@v4
-#        with:
-#          context: .
-#          file: ./Dockerfile.simple
-#          platforms: linux/arm/v7
-#          push: true
-#          tags: |
-#            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-armv7
-#          cache-from: type=gha
-#          cache-to: type=gha,mode=max
-
   manifest:
-    # Esegui solo dopo che ENTRAMBE le build sono state completate con successo
     needs: [ build-amd64, build-arm64 ]
     runs-on: ubuntu-latest
     permissions:
@@ -132,17 +95,23 @@ jobs:
 
       - name: Create and push multi-arch manifest
         run: |
-          # Definiamo il tag finale (es. ghcr.io/tuo-utente/tuo-repo:main)
           IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-          
-          echo "Creating manifest for $IMAGE_TAG"
-          echo "Using AMD64 digest: ${{ needs.build-amd64.outputs.digest }}"
-          echo "Using ARM64 digest: ${{ needs.build-arm64.outputs.digest }}"
+          IMAGE_DIGEST_AMD64=${{ needs.build-amd64.outputs.digest }}
+          IMAGE_DIGEST_ARM64=${{ needs.build-arm64.outputs.digest }}
 
-          # Crea e pusha il manifest usando i digest delle immagini
-          # Questo è il modo corretto per garantire che si usino le immagini base
+          # --- CONTROLLO DI SICUREZZA ---
+          # Fa fallire il job con un errore chiaro se uno dei digest è vuoto.
+          if [[ -z "$IMAGE_DIGEST_AMD64" || -z "$IMAGE_DIGEST_ARM64" ]]; then
+            echo "::error::Uno o entrambi i digest delle immagini sono vuoti."
+            echo "Digest AMD64: '$IMAGE_DIGEST_AMD64'"
+            echo "Digest ARM64: '$IMAGE_DIGEST_ARM64'"
+            echo "Verifica che i job di build precedenti abbiano i percorsi dei Dockerfile corretti."
+            exit 1
+          fi
+          
+          echo "Creating manifest for $IMAGE_TAG..."
           docker manifest create $IMAGE_TAG \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-amd64.outputs.digest }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-arm64.outputs.digest }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST_AMD64} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST_ARM64}
           
           docker manifest push $IMAGE_TAG
