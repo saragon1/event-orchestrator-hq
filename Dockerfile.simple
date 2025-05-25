@@ -6,17 +6,33 @@ COPY package*.json ./
 
 # Se stiamo buildando per ARM, ignoro gli script;
 # altrimenti eseguo npm ci normalmente.
+# ARG TARGETPLATFORM
+# RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
+#     npm config set ignore-scripts true; \
+#    fi; \
+# npm ci
+
+
+# Se stiamo buildando per ARM, ignoro gli script;
+# altrimenti eseguo npm ci normalmente.
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
-      npm config set ignore-scripts true; \
-    fi; \
-npm ci
+      npm ci --ignore-scripts; \
+    else \
+      npm ci; \
+    fi
 
 # Copy all files
 COPY . .
 
+RUN if [ "$TARGETPLATFORM" = "linux/arm/v7" ]; then \
+      npm install -D @vitejs/plugin-react --ignore-scripts; \
+    else \
+       npm install -D @vitejs/plugin-react; \
+    fi
+
 # Build the app (simplified for all architectures)
-RUN npm install -D @vitejs/plugin-react && npm run build
+RUN npm run build
 
 # Create env-config.js for runtime
 RUN echo 'window._env_ = {};' > ./dist/env-config.js
