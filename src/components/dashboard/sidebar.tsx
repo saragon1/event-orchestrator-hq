@@ -103,6 +103,11 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
       href: "/trains",
     },
     {
+      icon: UserPlus,
+      label: "Registrazione Evento",
+      href: "/event-registration",
+    },
+    {
       icon: DollarSign,
       label: t("common.eventExpenses"),
       href: "/expenses",

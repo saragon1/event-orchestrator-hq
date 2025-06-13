@@ -1,5 +1,6 @@
 import { RouteObject } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { EventRegistration } from "@/components/EventRegistration/EventRegistration";
 
 // Auth Pages
 import Login from "@/pages/Login";
@@ -185,6 +186,10 @@ export const protectedRoutes: RouteObject[] = [
   { 
     path: "/events/:id/documents",
     element: <EventDocuments />
+  },
+  { 
+    path: "/event-registration",
+    element: <EventRegistration />
   },
 ];
 
