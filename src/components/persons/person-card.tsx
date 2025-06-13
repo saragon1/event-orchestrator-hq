@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Pencil, Hotel, Plane, Bus, Car } from "lucide-react";
+import { Eye, Pencil, Hotel, Plane, Bus, Car, Trash } from "lucide-react";
 
 interface PersonCardProps {
   id: string;
@@ -21,6 +21,7 @@ interface PersonCardProps {
   hasCar?: boolean;
   onViewDetails?: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export const PersonCard = ({
@@ -34,6 +35,7 @@ export const PersonCard = ({
   hasCar = false,
   onViewDetails,
   onEdit,
+  onDelete,
 }: PersonCardProps) => {
   return (
     <Card className="animate-fade-in">
@@ -82,6 +84,14 @@ export const PersonCard = ({
           onClick={onEdit}
         >
           <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onDelete}
+          className="text-destructive hover:bg-destructive/10"
+        >
+          <Trash className="h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>

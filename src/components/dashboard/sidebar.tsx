@@ -128,14 +128,13 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
     },
   ];
 
-  if (isMobile && !isOpen) return null;
-
   return (
     <aside
       className={cn(
-        "bg-sidebar border-r border-border flex-shrink-0 h-screen overflow-y-auto py-4 transition-all duration-300 ease-in-out",
-        isOpen ? "w-64" : "w-0",
-        isMobile && isOpen ? "fixed z-50 left-0 top-0 w-64" : ""
+        "bg-sidebar border-r border-border flex-shrink-0 h-screen overflow-y-auto py-4 transition-transform duration-300 ease-in-out z-50",
+        isMobile 
+          ? (isOpen ? "translate-x-0 fixed w-64" : "-translate-x-full fixed w-64")
+          : "block relative w-64"
       )}
     >
       <div className="px-3 py-2">

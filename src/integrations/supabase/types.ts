@@ -222,6 +222,59 @@ export type Database = {
           },
         ]
       }
+      event_documents: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          event_id: string | null
+          file_name: string
+          file_url: string
+          id: string
+          last_modified: string | null
+          status: string | null
+          updated_at: string | null
+          upload_date: string | null
+          uploaded_by: string | null
+          version: number | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          last_modified?: string | null
+          status?: string | null
+          updated_at?: string | null
+          upload_date?: string | null
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          last_modified?: string | null
+          status?: string | null
+          updated_at?: string | null
+          upload_date?: string | null
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_documents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_expenses: {
         Row: {
           amount: number
@@ -687,7 +740,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
-          role: string | null
+          role: Database["public"]["Enums"]["user_type"]
         }
         Insert: {
           created_at?: string | null
@@ -695,7 +748,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["user_type"]
         }
         Update: {
           created_at?: string | null
@@ -703,7 +756,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["user_type"]
         }
         Relationships: []
       }
@@ -833,6 +886,7 @@ export type Database = {
         | "other"
       event_role: "vip" | "attendee" | "speaker" | "staff" | "other"
       invite_status: "waiting_invite" | "invited" | "confirmed" | "declined"
+      user_type: "user" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -959,6 +1013,7 @@ export const Constants = {
       ],
       event_role: ["vip", "attendee", "speaker", "staff", "other"],
       invite_status: ["waiting_invite", "invited", "confirmed", "declined"],
+      user_type: ["user", "admin"],
     },
   },
 } as const

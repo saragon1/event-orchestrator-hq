@@ -1,9 +1,8 @@
-name: Build and Push Container
+name: Build and Push Multi-Arch Container
 
 on:
   push:
     branches: [ main ]
-    # Publish when tags are pushed
     tags: [ 'v*' ]
   workflow_dispatch:
 
@@ -17,168 +16,122 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      # L'output sarà il digest 'reale' estratto dallo step 'extract_digest'
+      digest: ${{ steps.extract_digest.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Set up Docker Buildx for amd64
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      # Log in to GitHub Container Registry
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Extract metadata (tags, labels) for Docker
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-
-      # Build for AMD64
-      - name: Build and push Docker image for AMD64
-        uses: docker/build-push-action@v4
+      - name: Build and push AMD64 image
+        id: push_amd64
+        uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
           platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # --- NUOVO STEP PER ESTRARRE IL DIGEST CORRETTO ---
+      - name: Extract true digest from manifest list
+        id: extract_digest
+        run: |
+          # Ispeziona il manifest list e usa 'jq' per estrarre il digest dell'immagine contenuta
+          REAL_DIGEST=$(docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 | jq -r '.manifests[0].digest')
+          echo "Manifest list digest: ${{ steps.push_amd64.outputs.digest }}"
+          echo "Real image digest: $REAL_DIGEST"
+          echo "digest=$REAL_DIGEST" >> $GITHUB_OUTPUT
 
   build-arm64:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    outputs:
+      # L'output sarà il digest 'reale' estratto dallo step 'extract_digest'
+      digest: ${{ steps.extract_digest.outputs.digest }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Set up QEMU for ARM architecture
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'arm64'
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v3
 
-      # Set up Docker Buildx for arm64
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      # Log in to GitHub Container Registry
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Extract metadata for ARM64
-      - name: Extract Docker metadata
-        id: meta-arm64
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            suffix=-arm64
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-
-      # Try to build for ARM64 with simplified Dockerfile
-      - name: Build and push Docker image for ARM64
-        uses: docker/build-push-action@v4
-        continue-on-error: true
+      - name: Build and push ARM64 image
+        id: push_arm64
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.simple
-          push: true
+          file: ./Dockerfile.simple # Assicurati che il percorso sia corretto
           platforms: linux/arm64
-          tags: ${{ steps.meta-arm64.outputs.tags }}
-          labels: ${{ steps.meta-arm64.outputs.labels }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-arm7:
+      # --- NUOVO STEP PER ESTRARRE IL DIGEST CORRETTO ---
+      - name: Extract true digest from manifest list
+        id: extract_digest
+        run: |
+          # Ispeziona il manifest list e usa 'jq' per estrarre il digest dell'immagine contenuta
+          REAL_DIGEST=$(docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64 | jq -r '.manifests[0].digest')
+          echo "Manifest list digest: ${{ steps.push_arm64.outputs.digest }}"
+          echo "Real image digest: $REAL_DIGEST"
+          echo "digest=$REAL_DIGEST" >> $GITHUB_OUTPUT
+
+  manifest:
+    # Questo job non cambia
+    needs: [ build-amd64, build-arm64 ]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       packages: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # Set up QEMU for ARM architecture
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'arm'
-
-      # Set up Docker Buildx for arm/v7
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      # Log in to GitHub Container Registry
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Extract metadata for ARMv7
-      - name: Extract Docker metadata
-        id: meta-armv7
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            suffix=-armv7
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+      - name: Create and push multi-arch manifest
+        run: |
+          IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          IMAGE_DIGEST_AMD64=${{ needs.build-amd64.outputs.digest }}
+          IMAGE_DIGEST_ARM64=${{ needs.build-arm64.outputs.digest }}
 
-      # Try to build for ARMv7 with simplified Dockerfile
-      - name: Build and push Docker image for ARMv7
-        uses: docker/build-push-action@v4
-        continue-on-error: true
-        with:
-          context: .
-          file: ./Dockerfile.simple
-          push: true
-          platforms: linux/arm/v7
-          tags: ${{ steps.meta-armv7.outputs.tags }}
-          labels: ${{ steps.meta-armv7.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          if [[ -z "$IMAGE_DIGEST_AMD64" || -z "$IMAGE_DIGEST_ARM64" ]]; then
+            echo "::error::Uno o entrambi i digest delle immagini sono vuoti."
+            exit 1
+          fi
+          
+          echo "Creating manifest for $IMAGE_TAG..."
+          echo "Using AMD64 digest: $IMAGE_DIGEST_AMD64"
+          echo "Using ARM64 digest: $IMAGE_DIGEST_ARM64"
 
-      # Output image URL for easy access
-      - name: Image URL
-        run: echo "Image pushed to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} with latest tag" 
+          docker manifest create $IMAGE_TAG \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST_AMD64} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST_ARM64}
+          
+          docker manifest push $IMAGE_TAG
