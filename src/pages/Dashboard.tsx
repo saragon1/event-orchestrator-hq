@@ -10,9 +10,11 @@ import { ParticipantsTable } from "@/components/dashboard/participants-table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Clock, Mail, Check, X, User } from "lucide-react";
+import { Clock, Mail, Check, X, User, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import * as XLSX from 'xlsx';
+import { Button } from "@/components/ui/button";
 
 // Add a type declaration for the extended window
 interface ExtendedWindow extends Window {
@@ -188,6 +190,67 @@ const Dashboard = () => {
     }
   }, [isHotelModalOpen]);
 
+  const exportToExcel = async () => {
+    if (!selectedEventId) {
+      toast({
+        title: "Error",
+        description: "Nessun evento selezionato",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('event_persons')
+        .select(`
+          has_companion,
+          persons:person_id (
+            name,
+            email,
+            phone
+          )
+        `)
+        .eq('event_id', selectedEventId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(
+        data.map(reg => ({
+          'Nome e Cognome': reg.persons.name,
+          'Email': reg.persons.email,
+          'Telefono': reg.persons.phone || '',
+          'Accompagnatore': reg.has_companion ? 'Si' : 'No'
+        }))
+      );
+
+      // Set column widths
+      const columnWidths = [
+        { wch: 30 }, // Nome e Cognome - width 30 characters
+        { wch: 35 }, // Email - width 35 characters
+        { wch: 20 }, // Telefono - width 20 characters
+        { wch: 15 }  // Accompagnatore - width 15 characters
+      ];
+      ws['!cols'] = columnWidths;
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Registrazioni');
+
+      // Save file
+      XLSX.writeFile(wb, 'registrazioni_evento.xlsx');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast({
+        title: "Error",
+        description: "Errore durante l'esportazione del file Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <DashboardLayout title="Dashboard">
       <div className="space-y-6">
@@ -348,13 +411,22 @@ const Dashboard = () => {
       <div className="mt-8">
         <Accordion type="single" collapsible defaultValue="participants">
           <AccordionItem value="participants">
-            <AccordionTrigger className="flex items-center">
+            <AccordionTrigger className="flex items-center justify-between w-full">
               <div className="flex items-center">
                 <h2 className="text-2xl font-semibold">Event Participants</h2>
                 <p className="ml-4 text-muted-foreground">
                   {selectedEvent ? `${assignedPersons.length} participants` : "Select an event to view participants"}
                 </p>
               </div>
+              {selectedEvent && (
+                <Button onClick={(e) => {
+                  e.stopPropagation(); // Prevent accordion from toggling
+                  exportToExcel();
+                }} variant="outline" className="gap-2 mr-4">
+                  <Download className="h-4 w-4" />
+                  Scarica Lista Registrazioni (Excel)
+                </Button>
+              )}
             </AccordionTrigger>
             <AccordionContent>
               <ParticipantsTable selectedEventId={selectedEventId} />

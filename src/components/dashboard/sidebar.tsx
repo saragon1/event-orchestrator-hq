@@ -105,7 +105,8 @@ export const DashboardSidebar = ({ isOpen, setIsOpen }: DashboardSidebarProps) =
     {
       icon: UserPlus,
       label: "Registrazione Evento",
-      href: "/event-registration",
+      href: selectedEventId ? `/event-registration/${selectedEventId}` : "/event-registration",
+      disabled: !selectedEventId,
     },
     {
       icon: DollarSign,

@@ -58,6 +58,7 @@ const EventForm = () => {
     defaultValues: {
       name: "",
       location: "",
+      address: "",
       description: "",
     },
   });
@@ -77,11 +78,16 @@ const EventForm = () => {
         if (error) throw error;
 
         if (data) {
+          // Create dates at noon UTC to avoid timezone issues
+          const startDate = new Date(`${data.start_date}T12:00:00Z`);
+          const endDate = new Date(`${data.end_date}T12:00:00Z`);
+          
           form.reset({
             name: data.name,
-            start_date: new Date(data.start_date),
-            end_date: new Date(data.end_date),
+            start_date: startDate,
+            end_date: endDate,
             location: data.location,
+            address: data.address || "",
             description: data.description || "",
           });
         }
@@ -104,11 +110,24 @@ const EventForm = () => {
     setIsLoading(true);
 
     try {
-      // Convert Date objects to ISO strings for Supabase
+      // Format dates as YYYY-MM-DD for Supabase, ensuring we get the correct date
+      // regardless of the user's timezone
+      const startDate = new Date(values.start_date);
+      const endDate = new Date(values.end_date);
+      
+      // Get UTC year, month, day
+      const startYear = startDate.getUTCFullYear();
+      const startMonth = String(startDate.getUTCMonth() + 1).padStart(2, '0');
+      const startDay = String(startDate.getUTCDate()).padStart(2, '0');
+      
+      const endYear = endDate.getUTCFullYear();
+      const endMonth = String(endDate.getUTCMonth() + 1).padStart(2, '0');
+      const endDay = String(endDate.getUTCDate()).padStart(2, '0');
+      
       const eventData = {
         name: values.name,
-        start_date: values.start_date.toISOString().split('T')[0],
-        end_date: values.end_date.toISOString().split('T')[0],
+        start_date: `${startYear}-${startMonth}-${startDay}`,
+        end_date: `${endYear}-${endMonth}-${endDay}`,
         location: values.location,
         address: values.address,
         description: values.description || null,

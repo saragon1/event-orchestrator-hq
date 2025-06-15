@@ -42,6 +42,10 @@ export const publicRoutes: RouteObject[] = [
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
   { path: "/logout", element: <Logout /> },
+  { 
+    path: "/event-registration/:eventId",
+    element: <EventRegistration />
+  },
 ];
 
 // Protected routes (auth required)
@@ -186,10 +190,6 @@ export const protectedRoutes: RouteObject[] = [
   { 
     path: "/events/:id/documents",
     element: <EventDocuments />
-  },
-  { 
-    path: "/event-registration",
-    element: <EventRegistration />
   },
 ];
 

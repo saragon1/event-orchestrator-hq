@@ -19,13 +19,19 @@ import {
   Trash2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useEventStore } from "@/stores/event-store";
 import { EmptyPlaceholder } from "@/components/ui/empty-placeholder";
 import { Database } from "@/integrations/supabase/types";
 
 type Event = Database["public"]["Tables"]["events"]["Row"];
+
+// Format a date string in YYYY-MM-DD format to display format
+const formatDbDate = (dateStr: string) => {
+  const [year, month, day] = dateStr.split('-');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[parseInt(month, 10) - 1]} ${parseInt(day, 10)}, ${year}`;
+};
 
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -151,7 +157,7 @@ const Events = () => {
                   <CardTitle>{event.name}</CardTitle>
                   <CardDescription className="flex items-center gap-2">
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(new Date(event.start_date), 'MMM d, yyyy')} - {format(new Date(event.end_date), 'MMM d, yyyy')}
+                    {formatDbDate(event.start_date)} - {formatDbDate(event.end_date)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
