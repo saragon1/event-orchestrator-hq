@@ -144,7 +144,33 @@ export const EventRegistration: React.FC = () => {
 
       if (eventPersonError) throw eventPersonError;
 
-      toast.success('Registrazione completata con successo!');
+      toast.success('Registrazione avvenuta con successo!', {
+        position: 'top-center',
+        style: {
+          background: '#22c55e', // Verde brillante
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '1.25rem',
+          boxShadow: '0 4px 24px 0 rgba(34,197,94,0.2)',
+          borderRadius: '12px',
+          padding: '1.5rem 2rem',
+          border: '2px solid #16a34a',
+        },
+        icon: (
+          <svg
+            className="animate-bounce"
+            width="32"
+            height="32"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="#fff"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        ),
+        duration: 6000, // Durata di 6 secondi
+      });
       setName('');
       setEmail('');
       setPhone('');
